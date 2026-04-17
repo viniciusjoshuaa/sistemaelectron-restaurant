@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mesas</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script src="../assets/theme.js"></script>
+  <style>
+    .mesas-shell{max-width:1280px;margin:0 auto;padding:24px 24px 40px}
+    .mesas-topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+    .mesas-title-wrap h2{margin:0 0 6px}
+    .mesas-title-wrap p{margin:0;color:var(--text-secondary,#667085)}
+    .mesas-icon-actions{display:flex;gap:12px;align-items:center}
+    .icon-square-btn{width:48px;height:48px;border-radius:14px;border:1px solid rgba(16,24,40,.14);background:var(--card-bg,#fff);display:inline-flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;cursor:pointer;box-shadow:0 10px 22px rgba(16,24,40,.08);transition:.2s ease}
+    .icon-square-btn:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(16,24,40,.12)}
+    .mesas-overview{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:14px;margin-bottom:18px}
+    .metric-card{background:var(--card-bg,#fff);border:1px solid rgba(16,24,40,.08);border-radius:20px;padding:18px;box-shadow:0 10px 22px rgba(16,24,40,.06)}
+    .metric-card strong{display:block;font-size:28px;line-height:1;margin-bottom:8px}
+    .metric-card span{color:var(--text-secondary,#667085);font-size:14px}
+    .status-dot{display:inline-block;width:10px;height:10px;border-radius:999px;margin-right:8px}
+    .mesas-board-layout{display:grid;grid-template-columns:1.05fr .95fr;gap:20px;align-items:start}
+    .mesas-panel{background:var(--card-bg,#fff);border:1px solid rgba(16,24,40,.08);border-radius:24px;padding:22px;box-shadow:0 12px 30px rgba(16,24,40,.06)}
+    .mesas-panel h3{margin:0 0 8px}
+    .mesas-panel p.panel-text{margin:0 0 18px;color:var(--text-secondary,#667085)}
+    .mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,54px));gap:10px;justify-content:start}
+    .mini-mesa{width:54px;height:54px;border-radius:14px;border:1px solid rgba(16,24,40,.15);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;background:#fff;color:#1f2937;cursor:pointer;user-select:none;transition:.16s ease}
+    .mini-mesa[data-status="disponivel"]{background:#26b15c;color:#fff;border-color:#26b15c}
+    .mini-mesa[data-status="ocupada"]{background:#d94343;color:#fff;border-color:#d94343}
+    .legenda-row{display:flex;flex-wrap:wrap;gap:14px;margin-top:14px}
+    .legenda-chip{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary,#667085)}
+    .mesas-bottom-center{display:flex;justify-content:center;margin-top:20px}
+    .pedido-center-card{width:min(880px,100%);background:var(--card-bg,#fff);border:1px solid rgba(16,24,40,.08);border-radius:26px;padding:24px;box-shadow:0 16px 36px rgba(16,24,40,.08)}
+    .pedido-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .field-group{display:flex;flex-direction:column;gap:8px}
+    .field-group label{font-weight:600}
+    .field-group input,.field-group select,.field-group textarea{width:100%;padding:12px 14px;border-radius:14px;border:1px solid rgba(16,24,40,.14);background:var(--input-bg,#fff);color:inherit}
+    .field-group textarea{min-height:88px;resize:vertical}
+    .scroll-select{height:170px}
+    .product-search-results{margin-top:8px;border:1px solid rgba(16,24,40,.10);border-radius:16px;max-height:212px;overflow:auto;background:var(--card-bg,#fff)}
+    .product-option{padding:12px 14px;display:flex;justify-content:space-between;gap:12px;cursor:pointer;border-bottom:1px solid rgba(16,24,40,.06)}
+    .product-option:last-child{border-bottom:none}
+    .product-option:hover{background:rgba(24,119,242,.05)}
+    .selected-items{margin-top:16px;border:1px dashed rgba(16,24,40,.14);border-radius:18px;padding:14px;min-height:120px}
+    .item-row{display:grid;grid-template-columns:1fr auto auto auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(16,24,40,.06)}
+    .item-row:last-child{border-bottom:none}
+    .qty-btn,.ghost-btn,.primary-btn,.danger-btn{border:none;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:600}
+    .qty-btn{background:#eef2f6}
+    .ghost-btn{background:#eef2f6}
+    .primary-btn{background:#1f8f57;color:#fff}
+    .danger-btn{background:#d94343;color:#fff}
+    .actions-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-end;margin-top:18px}
+    .helper-text{font-size:13px;color:var(--text-secondary,#667085)}
+    .total-box{margin-top:14px;padding:14px 16px;border-radius:18px;background:rgba(31,143,87,.08);display:flex;justify-content:space-between;align-items:center;font-weight:700}
+    .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:999}
+    .modal-overlay[hidden]{display:none!important}
+    .modal-card{width:min(780px,100%);background:var(--card-bg,#fff);border-radius:28px;padding:24px;border:1px solid rgba(16,24,40,.08);box-shadow:0 30px 80px rgba(15,23,42,.35)}
+    .modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px}
+    .modal-head p{margin:6px 0 0;color:var(--text-secondary,#667085)}
+    .modal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,56px));gap:10px;justify-content:center;margin-top:10px}
+    .modal-actions{display:flex;justify-content:flex-end;margin-top:18px}
+    .empty-msg{padding:24px;text-align:center;color:var(--text-secondary,#667085)}
+    @media (max-width: 980px){
+      .mesas-board-layout,.pedido-grid,.mesas-overview{grid-template-columns:1fr}
+      .mesas-topbar{align-items:flex-start}
+      .actions-row{justify-content:stretch}
+      .actions-row > *{flex:1}
+    }
+  </style>
+</head>
+<body>
+  <button class="btn-voltar" onclick="window.location.href='../index.html'">←</button>
+
+  <div class="mesas-shell">
+    <div class="mesas-topbar">
+      <div class="mesas-title-wrap">
+        <h2>🪑 Gestão de Mesas</h2>
+        <p>Cadastre mesas sob demanda, marque disponibilidade pelo mapa visual e abra pedidos somente pelo fluxo central da página.</p>
+      </div>
+      <div class="mesas-icon-actions">
+        <button class="icon-square-btn" title="Buscar / visualizar mesas" onclick="abrirPopupMesas()">⌗</button>
+        <button class="icon-square-btn" title="Cadastrar nova mesa" onclick="cadastrarNovaMesa()">+</button>
+      </div>
+    </div>
+
+    <div class="mesas-overview">
+      <div class="metric-card"><strong id="metricTotal">0</strong><span>Total de mesas cadastradas</span></div>
+      <div class="metric-card"><strong id="metricNeutra">0</strong><span><span class="status-dot" style="background:#cfd6df"></span>Sem marcação</span></div>
+      <div class="metric-card"><strong id="metricDisponivel">0</strong><span><span class="status-dot" style="background:#26b15c"></span>Disponíveis</span></div>
+      <div class="metric-card"><strong id="metricOcupada">0</strong><span><span class="status-dot" style="background:#d94343"></span>Indisponíveis / ocupadas</span></div>
+    </div>
+
+    <div class="mesas-board-layout">
+      <section class="mesas-panel">
+        <h3>Buscador visual de mesas</h3>
+        <p class="panel-text">Use o botão no canto superior direito para abrir o popup com todas as mesas em grade. Aqui fica um resumo rápido das últimas cadastradas.</p>
+        <div id="miniGridResumo" class="mini-grid"></div>
+        <div class="legenda-row">
+          <div class="legenda-chip"><span class="status-dot" style="background:#fff;border:1px solid rgba(16,24,40,.18)"></span>Sem marcação</div>
+          <div class="legenda-chip"><span class="status-dot" style="background:#26b15c"></span>Disponível</div>
+          <div class="legenda-chip"><span class="status-dot" style="background:#d94343"></span>Indisponível</div>
+        </div>
+      </section>
+
+      <section class="mesas-panel">
+        <h3>Como operar</h3>
+        <p class="panel-text">1. Cadastre mesas pelo botão <strong>+</strong>.<br>2. Marque o status no popup visual.<br>3. Abra o pedido apenas pela lista da parte inferior.<br>4. Busque produtos e adicione os itens ao pedido.</p>
+        <div class="selected-items" style="min-height:auto">
+          <div class="helper-text">Fluxo pensado para operação de bar/restaurante com ação rápida, seleção de mesa, busca por produto e fechamento direto do pedido.</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="mesas-bottom-center">
+      <section class="pedido-center-card">
+        <h3 style="margin-top:0">Abrir pedido por mesa</h3>
+        <p class="panel-text">A seleção da mesa acontece apenas por esta lista centralizada, evitando abertura acidental ao clicar no mapa visual.</p>
+
+        <div class="pedido-grid">
+          <div>
+            <div class="field-group">
+              <label for="selectMesaPedido">Mesa</label>
+              <select id="selectMesaPedido" class="scroll-select" size="8" onchange="selecionarMesaPedido()"></select>
+              <span class="helper-text">A lista puxa automaticamente todas as mesas cadastradas.</span>
+            </div>
+
+            <div class="field-group" style="margin-top:14px">
+              <label for="mesaCliente">Cliente</label>
+              <select id="mesaCliente"></select>
+            </div>
+
+            <div class="field-group" style="margin-top:14px">
+              <label for="mesaObservacao">Observação</label>
+              <textarea id="mesaObservacao" placeholder="Ex.: sem gelo, dividir conta, prioridade da cozinha..."></textarea>
+            </div>
+          </div>
+
+          <div>
+            <div class="field-group">
+              <label for="produtoBusca">Fazer Pedido</label>
+              <input id="produtoBusca" type="text" placeholder="Digite para filtrar produtos cadastrados..." oninput="filtrarProdutos()">
+              <div id="productResults" class="product-search-results"></div>
+            </div>
+
+            <div class="selected-items">
+              <strong>Itens selecionados</strong>
+              <div id="listaItensMesa"></div>
+              <div class="total-box">
+                <span>Total do pedido</span>
+                <span id="totalPedido">R$ 0,00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions-row">
+          <button class="ghost-btn" onclick="marcarMesaDisponivel()">Marcar disponível</button>
+          <button class="ghost-btn" onclick="liberarMesaAtual()">Liberar mesa</button>
+          <button class="primary-btn" onclick="salvarPedidoMesa()">Salvar pedido</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="popupMesas" class="modal-overlay" hidden onclick="fecharPopupPorFora(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <div>
+          <h3 style="margin:0">Mapa de mesas</h3>
+          <p>Clique na mesma mesa para alternar entre branco, verde e vermelho.</p>
+        </div>
+        <button class="ghost-btn" onclick="fecharPopupMesas()">Fechar</button>
+      </div>
+      <div id="popupGrid" class="modal-grid"></div>
+      <div class="modal-actions">
+        <button class="primary-btn" onclick="salvarMapaMesas()">Salvar mapa</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+let mesas = []
+let clientes = []
+let pratos = []
+let mesaAtual = null
+
+document.addEventListener('DOMContentLoaded', init)
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') fecharPopupMesas()
+})
+
+async function init() {
+  try {
+    const [mesasData, clientesData, pratosData] = await Promise.all([
+      window.api.getMesas(),
+      window.api.getClientes(),
+      window.api.getPratos()
+    ])
+
+    mesas = normalizarMesas(Array.isArray(mesasData) ? mesasData : [])
+    clientes = Array.isArray(clientesData) ? clientesData : []
+    pratos = Array.isArray(pratosData) ? pratosData : []
+
+    if (!mesas.length) {
+      mesas = gerarMesasPadrao(20)
+      await persistirMesas()
+    }
+
+    preencherClientes()
+    renderizarTudo()
+  } catch (error) {
+    console.error('Erro ao iniciar a página de mesas:', error)
+    alert('Não foi possível carregar a página de mesas.')
+  }
+}
+
+function gerarMesasPadrao(qtd) {
+  return Array.from({ length: qtd }, (_, index) => criarEstruturaMesa(index + 1))
+}
+
+function criarEstruturaMesa(id) {
+  const numero = String(id).padStart(2, '0')
+  return {
+    id,
+    nome: `Mesa ${numero}`,
+    status: 'neutra',
+    clienteId: null,
+    clienteNome: '',
+    observacao: '',
+    itens: [],
+    atualizadoEm: null
+  }
+}
+
+function normalizarMesas(lista) {
+  return (lista || []).map((mesa, index) => ({
+    ...criarEstruturaMesa(mesa?.id || index + 1),
+    ...mesa,
+    id: Number(mesa?.id || index + 1),
+    nome: mesa?.nome || `Mesa ${String(mesa?.id || index + 1).padStart(2, '0')}`,
+    status: mesa?.status || 'neutra',
+    itens: Array.isArray(mesa?.itens) ? mesa.itens : []
+  })).sort((a, b) => a.id - b.id)
+}
+
+function renderizarTudo() {
+  atualizarMetricas()
+  renderizarMiniResumo()
+  renderizarPopupMesas()
+  renderizarListaMesas()
+  renderizarItensSelecionados()
+  filtrarProdutos()
+}
+
+function atualizarMetricas() {
+  const total = mesas.length
+  const neutras = mesas.filter(m => m.status === 'neutra').length
+  const disponiveis = mesas.filter(m => m.status === 'disponivel').length
+  const ocupadas = mesas.filter(m => m.status === 'ocupada').length
+
+  document.getElementById('metricTotal').textContent = total
+  document.getElementById('metricNeutra').textContent = neutras
+  document.getElementById('metricDisponivel').textContent = disponiveis
+  document.getElementById('metricOcupada').textContent = ocupadas
+}
+
+function renderizarMiniResumo() {
+  const wrap = document.getElementById('miniGridResumo')
+  const ultimas = mesas.slice(-18)
+  wrap.innerHTML = ultimas.map(mesa => `
+    <button class="mini-mesa" data-status="${mesa.status}" title="${mesa.nome} • ${statusMesaTexto(mesa.status)}" onclick="selecionarMesaPorId(${mesa.id})">${String(mesa.id).padStart(2,'0')}</button>
+  `).join('')
+}
+
+function renderizarPopupMesas() {
+  const grid = document.getElementById('popupGrid')
+  if (!mesas.length) {
+    grid.innerHTML = '<div class="empty-msg">Nenhuma mesa cadastrada.</div>'
+    return
+  }
+  grid.innerHTML = mesas.map(mesa => `
+    <button class="mini-mesa" data-status="${mesa.status}" onclick="alternarStatusMesa(${mesa.id})" title="${mesa.nome}">${String(mesa.id).padStart(2,'0')}</button>
+  `).join('')
+}
+
+function renderizarListaMesas() {
+  const select = document.getElementById('selectMesaPedido')
+  if (!mesas.length) {
+    select.innerHTML = ''
+    return
+  }
+  select.innerHTML = mesas.map(mesa => {
+    const selected = mesaAtual && Number(mesaAtual.id) === Number(mesa.id) ? 'selected' : ''
+    return `<option value="${mesa.id}" ${selected}>${mesa.nome} • ${statusMesaTexto(mesa.status)}</option>`
+  }).join('')
+
+  if (!mesaAtual && mesas.length) {
+    mesaAtual = mesas[0]
+    select.value = String(mesaAtual.id)
+  }
+  preencherFormularioMesaAtual()
+}
+
+function preencherClientes() {
+  const select = document.getElementById('mesaCliente')
+  let html = '<option value="">Selecione um cliente</option>'
+  clientes.forEach(cliente => {
+    html += `<option value="${cliente.id}">${cliente.nome}${cliente.telefone ? ' • ' + cliente.telefone : ''}</option>`
+  })
+  select.innerHTML = html
+}
+
+function selecionarMesaPedido() {
+  const id = Number(document.getElementById('selectMesaPedido').value)
+  selecionarMesaPorId(id)
+}
+
+function selecionarMesaPorId(id) {
+  const encontrada = mesas.find(mesa => Number(mesa.id) === Number(id))
+  if (!encontrada) return
+  mesaAtual = encontrada
+  document.getElementById('selectMesaPedido').value = String(id)
+  preencherFormularioMesaAtual()
+  renderizarItensSelecionados()
+}
+
+function preencherFormularioMesaAtual() {
+  if (!mesaAtual) return
+  document.getElementById('mesaCliente').value = mesaAtual.clienteId ? String(mesaAtual.clienteId) : ''
+  document.getElementById('mesaObservacao').value = mesaAtual.observacao || ''
+}
+
+function abrirPopupMesas() {
+  document.getElementById('popupMesas').hidden = false
+}
+
+function fecharPopupMesas() {
+  document.getElementById('popupMesas').hidden = true
+}
+
+function fecharPopupPorFora(event) {
+  if (event.target.id === 'popupMesas') fecharPopupMesas()
+}
+
+function proximoStatus(statusAtual) {
+  if (statusAtual === 'neutra') return 'disponivel'
+  if (statusAtual === 'disponivel') return 'ocupada'
+  return 'neutra'
+}
+
+function alternarStatusMesa(id) {
+  const mesa = mesas.find(item => Number(item.id) === Number(id))
+  if (!mesa) return
+  mesa.status = proximoStatus(mesa.status || 'neutra')
+  mesa.atualizadoEm = new Date().toISOString()
+  if (mesaAtual && Number(mesaAtual.id) === Number(id)) {
+    mesaAtual = mesa
+  }
+  renderizarTudo()
+}
+
+async function salvarMapaMesas() {
+  try {
+    await persistirMesas()
+    fecharPopupMesas()
+    alert('Mapa de mesas salvo com sucesso.')
+  } catch (error) {
+    console.error(error)
+    alert('Erro ao salvar o mapa de mesas.')
+  }
+}
+
+async function cadastrarNovaMesa() {
+  const proximoId = mesas.length ? Math.max(...mesas.map(m => Number(m.id) || 0)) + 1 : 1
+  const novaMesa = criarEstruturaMesa(proximoId)
+  mesas.push(novaMesa)
+  mesas = normalizarMesas(mesas)
+  mesaAtual = novaMesa
+  await persistirMesas()
+  renderizarTudo()
+  abrirPopupMesas()
+}
+
+function filtrarProdutos() {
+  const termo = (document.getElementById('produtoBusca').value || '').trim().toLowerCase()
+  const lista = document.getElementById('productResults')
+
+  const filtrados = pratos.filter(prato => {
+    const nome = (prato.nome || '').toLowerCase()
+    return !termo || nome.includes(termo)
+  })
+
+  if (!filtrados.length) {
+    lista.innerHTML = '<div class="empty-msg">Nenhum produto encontrado.</div>'
+    return
+  }
+
+  lista.innerHTML = filtrados.map(prato => `
+    <div class="product-option" onclick="adicionarProdutoAoPedido(${prato.id})">
+      <div>
+        <strong>${prato.nome}</strong><br>
+        <span class="helper-text">${prato.categoria || 'Produto cadastrado'}</span>
+      </div>
+      <strong>R$ ${formatarNumero(prato.precoVenda || prato.valorFinal || 0)}</strong>
+    </div>
+  `).join('')
+}
+
+function adicionarProdutoAoPedido(pratoId) {
+  if (!mesaAtual) return
+  const prato = pratos.find(item => String(item.id) === String(pratoId))
+  if (!prato) return
+
+  mesaAtual.itens = Array.isArray(mesaAtual.itens) ? mesaAtual.itens : []
+  const existente = mesaAtual.itens.find(item => String(item.pratoId) === String(prato.id))
+  if (existente) {
+    existente.quantidade += 1
+  } else {
+    mesaAtual.itens.push({
+      pratoId: prato.id,
+      nome: prato.nome,
+      preco: Number(prato.precoVenda || prato.valorFinal || 0),
+      quantidade: 1
+    })
+  }
+
+  if (mesaAtual.status === 'neutra') mesaAtual.status = 'ocupada'
+  mesaAtual.atualizadoEm = new Date().toISOString()
+  renderizarTudo()
+}
+
+function renderizarItensSelecionados() {
+  const alvo = document.getElementById('listaItensMesa')
+  if (!mesaAtual || !mesaAtual.itens || !mesaAtual.itens.length) {
+    alvo.innerHTML = '<div class="helper-text" style="padding-top:10px">Nenhum item adicionado à mesa selecionada.</div>'
+    atualizarTotal()
+    return
+  }
+
+  alvo.innerHTML = mesaAtual.itens.map((item, index) => `
+    <div class="item-row">
+      <div>
+        <strong>${item.nome}</strong><br>
+        <span class="helper-text">R$ ${formatarNumero(item.preco)} cada</span>
+      </div>
+      <button class="qty-btn" onclick="alterarQuantidade(${index}, -1)">−</button>
+      <strong>${item.quantidade}</strong>
+      <button class="qty-btn" onclick="alterarQuantidade(${index}, 1)">+</button>
+    </div>
+  `).join('')
+
+  atualizarTotal()
+}
+
+function alterarQuantidade(index, delta) {
+  if (!mesaAtual?.itens?.[index]) return
+  mesaAtual.itens[index].quantidade += delta
+  if (mesaAtual.itens[index].quantidade <= 0) {
+    mesaAtual.itens.splice(index, 1)
+  }
+  if (!mesaAtual.itens.length && mesaAtual.status === 'ocupada') {
+    mesaAtual.status = 'disponivel'
+  }
+  mesaAtual.atualizadoEm = new Date().toISOString()
+  renderizarTudo()
+}
+
+function atualizarTotal() {
+  const total = (mesaAtual?.itens || []).reduce((acc, item) => acc + Number(item.preco || 0) * Number(item.quantidade || 0), 0)
+  document.getElementById('totalPedido').textContent = `R$ ${formatarNumero(total)}`
+}
+
+async function persistirMesas() {
+  sincronizarMesaAtualComFormulario()
+  await window.api.salvarEstadoMesas(normalizarMesas(mesas))
+}
+
+function sincronizarMesaAtualComFormulario() {
+  if (!mesaAtual) return
+  mesaAtual.clienteId = document.getElementById('mesaCliente').value || null
+  mesaAtual.observacao = document.getElementById('mesaObservacao').value || ''
+  const cliente = clientes.find(item => String(item.id) === String(mesaAtual.clienteId))
+  mesaAtual.clienteNome = cliente?.nome || ''
+}
+
+async function salvarPedidoMesa() {
+  if (!mesaAtual) {
+    alert('Selecione uma mesa primeiro.')
+    return
+  }
+  sincronizarMesaAtualComFormulario()
+  if (!mesaAtual.itens || !mesaAtual.itens.length) {
+    alert('Adicione pelo menos um produto ao pedido.')
+    return
+  }
+
+  try {
+    const payload = {
+      mesaId: mesaAtual.id,
+      mesaNome: mesaAtual.nome,
+      clienteId: mesaAtual.clienteId || null,
+      clienteNome: mesaAtual.clienteNome || 'Consumidor da mesa',
+      observacao: mesaAtual.observacao || '',
+      itens: mesaAtual.itens || []
+    }
+
+    await window.api.registrarPedidoMesa(payload)
+    await persistirMesas()
+    renderizarTudo()
+    alert('Pedido da mesa salvo com sucesso.')
+  } catch (error) {
+    console.error(error)
+    alert('Erro ao salvar o pedido da mesa.')
+  }
+}
+
+async function marcarMesaDisponivel() {
+  if (!mesaAtual) return
+  sincronizarMesaAtualComFormulario()
+  mesaAtual.status = 'disponivel'
+  mesaAtual.atualizadoEm = new Date().toISOString()
+  await persistirMesas()
+  renderizarTudo()
+}
+
+async function liberarMesaAtual() {
+  if (!mesaAtual) return
+  try {
+    await window.api.liberarMesa(mesaAtual.id)
+    mesaAtual.status = 'disponivel'
+    mesaAtual.clienteId = null
+    mesaAtual.clienteNome = ''
+    mesaAtual.observacao = ''
+    mesaAtual.itens = []
+    mesaAtual.atualizadoEm = new Date().toISOString()
+    preencherFormularioMesaAtual()
+    renderizarTudo()
+    alert('Mesa liberada com sucesso.')
+  } catch (error) {
+    console.error(error)
+    alert('Erro ao liberar a mesa.')
+  }
+}
+
+function statusMesaTexto(status) {
+  if (status === 'disponivel') return 'Disponível'
+  if (status === 'ocupada') return 'Indisponível'
+  return 'Sem marcação'
+}
+
+function formatarNumero(valor) {
+  return Number(valor || 0).toFixed(2).replace('.', ',')
+}
+</script>
+</body>
+</html>

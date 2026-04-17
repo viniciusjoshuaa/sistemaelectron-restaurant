@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cardápio Digital - {NOME DO RESTAURANTE}</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f8f9fa; }
+    
+    .header {
+        background: linear-gradient(135deg, #1e7e34 0%, #2ecc71 100%);
+        color: white;
+        padding: 30px 20px;
+        text-align: center;
+    }
+    
+    .header h1 { font-size: 28px; margin-bottom: 10px; }
+    .header p { opacity: 0.9; }
+    
+    .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+    
+    .info-cardapio {
+        background: white;
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border-left: 5px solid #1e7e34;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .categoria {
+        background: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+    }
+    
+    .categoria h2 {
+        color: #1e7e34;
+        border-bottom: 2px solid #1e7e34;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .prato {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    
+    .prato:hover {
+        background: #f0f9f0;
+        transform: translateX(5px);
+    }
+    
+    .prato:last-child { border-bottom: none; }
+    
+    .prato-info h3 { font-size: 18px; margin-bottom: 5px; }
+    .prato-info p { color: #666; font-size: 14px; }
+    .prato-preco { 
+        font-weight: bold; 
+        color: #1e7e34;
+        font-size: 18px;
+    }
+    
+    .acompanhamentos {
+        margin-top: 10px;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        display: none;
+    }
+    
+    .acompanhamentos.mostrar { display: block; }
+    
+    .acompanhamento-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .acompanhamento-item:last-child { border-bottom: none; }
+    
+    .btn-adicionar {
+        background: #1e7e34;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    
+    .btn-adicionar:hover { background: #145c26; }
+    
+    .carrinho {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: white;
+        border-radius: 50px;
+        padding: 15px 25px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        cursor: pointer;
+        border: 2px solid #1e7e34;
+    }
+    
+    .carrinho span {
+        background: #1e7e34;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+    }
+    
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+    }
+    
+    .modal-content {
+        background: white;
+        max-width: 500px;
+        margin: 50px auto;
+        padding: 25px;
+        border-radius: 15px;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .modal-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .modal-obs {
+        width: 100%;
+        padding: 10px;
+        margin: 15px 0;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+    }
+    
+    .btn-whatsapp {
+        background: #25D366;
+        color: white;
+        border: none;
+        padding: 15px;
+        border-radius: 8px;
+        width: 100%;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    .btn-whatsapp:hover { background: #128C7E; }
+    
+    .btn-fechar {
+        float: right;
+        font-size: 24px;
+        cursor: pointer;
+    }
+    
+    .observacao-checkbox {
+        margin: 10px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .observacao-checkbox input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .observacao-campo {
+        margin-top: 10px;
+        display: none;
+    }
+    
+    .observacao-campo.mostrar { display: block; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🍽️ {NOME DO RESTAURANTE}</h1>
+    <p>Faça seu pedido pelo WhatsApp</p>
+</div>
+
+<div class="container">
+    <div class="info-cardapio" id="infoCardapio">
+        <span>📅 Carregando cardápio...</span>
+        <span id="dataCardapio"></span>
+    </div>
+    
+    <div id="categorias-container"></div>
+</div>
+
+<!-- CARRINHO FLUTUANTE -->
+<div class="carrinho" onclick="abrirCarrinho()" id="carrinhoBtn">
+    <span>🛒</span>
+    <strong id="carrinhoCount">0</strong> itens
+    <span>R$ <span id="carrinhoTotal">0.00</span></span>
+</div>
+
+<!-- MODAL DO CARRINHO -->
+<div class="modal" id="modalCarrinho">
+    <div class="modal-content">
+        <span class="btn-fechar" onclick="fecharCarrinho()">&times;</span>
+        <h2 style="margin-bottom: 20px;">🛒 Seu Pedido</h2>
+        
+        <div id="carrinhoItens"></div>
+        
+        <div class="observacao-checkbox">
+            <input type="checkbox" id="temObservacao" onchange="toggleObservacao()">
+            <label for="temObservacao">Adicionar observação geral</label>
+        </div>
+        
+        <div class="observacao-campo" id="observacaoGeralCampo">
+            <textarea class="modal-obs" id="observacaoGeral" placeholder="Ex: Sem cebola, ponto da carne, etc..."></textarea>
+        </div>
+        
+        <h3 style="text-align: right; margin: 20px 0;">
+            Total: R$ <span id="modalTotal">0.00</span>
+        </h3>
+        
+        <button class="btn-whatsapp" onclick="enviarWhatsApp()">
+            📱 FINALIZAR PEDIDO NO WHATSAPP
+        </button>
+    </div>
+</div>
+
+<script>
+// ============================================
+// CONFIGURAÇÕES
+// ============================================
+const NUMERO_WHATSAPP = "55XX999999999" // Substitua pelo seu número
+const NOME_RESTAURANTE = "{NOME DO RESTAURANTE}"
+
+// ============================================
+// ESTADO GLOBAL
+// ============================================
+let cardapioAtual = null
+let carrinho = [] // { id, nome, preco, observacao }
+let categorias = {} // Agrupa pratos por categoria
+
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+async function init() {
+    // Pegar parâmetro da URL (se veio do sistema)
+    const urlParams = new URLSearchParams(window.location.search)
+    const dataParam = urlParams.get('data')
+    
+    if (dataParam) {
+        // Veio do sistema com cardápio específico
+        const cardapioData = JSON.parse(decodeURIComponent(dataParam))
+        processarCardapio(cardapioData)
+    } else {
+        // Tentar buscar do arquivo JSON diretamente
+        try {
+            const response = await fetch('../data/cardapioAtual.json')
+            const data = await response.json()
+            processarCardapio(data)
+        } catch (error) {
+            console.error('Erro ao carregar cardápio:', error)
+            document.getElementById('categorias-container').innerHTML = 
+                '<p style="text-align: center; color: #e74c3c;">Cardápio não disponível</p>'
+        }
+    }
+}
+
+// ============================================
+// PROCESSAR CARDÁPIO
+// ============================================
+function processarCardapio(data) {
+    cardapioAtual = data
+    
+    document.getElementById('dataCardapio').innerHTML = 
+        `📅 ${data.data || new Date().toLocaleDateString('pt-BR')}`
+    
+    // Organizar por categoria (se os pratos tiverem categoria)
+    // Se não tiver, cria uma categoria única "Pratos"
+    const itens = data.itens || []
+    
+    // Aqui você pode adaptar conforme a estrutura dos seus pratos
+    // Se seus pratos têm campo 'categoria', use ele
+    itens.forEach(item => {
+        const categoria = item.categoria || 'Pratos do Dia'
+        if (!categorias[categoria]) categorias[categoria] = []
+        categorias[categoria].push(item)
+    })
+    
+    renderizarCardapio()
+}
+
+// ============================================
+// RENDERIZAR CARDÁPIO
+// ============================================
+function renderizarCardapio() {
+    const container = document.getElementById('categorias-container')
+    let html = ''
+    
+    for (let [categoria, pratos] of Object.entries(categorias)) {
+        html += `<div class="categoria">`
+        html += `<h2>${categoria}</h2>`
+        
+        pratos.forEach(prato => {
+            const nome = prato.nome || prato
+            const descricao = prato.descricao || ''
+            const preco = prato.precoVenda || 0
+            const id = prato.id || Date.now() + Math.random()
+            
+            html += `
+                <div class="prato" onclick="abrirModalPrato(${id})" id="prato-${id}">
+                    <div class="prato-info">
+                        <h3>${nome}</h3>
+                        <p>${descricao}</p>
+                    </div>
+                    <div class="prato-preco">R$ ${preco.toFixed(2)}</div>
+                </div>
+                
+                <!-- Modal de acompanhamentos (inicialmente oculto) -->
+                <div class="modal" id="modal-${id}">
+                    <div class="modal-content">
+                        <span class="btn-fechar" onclick="fecharModalPrato(${id})">&times;</span>
+                        <h2>${nome}</h2>
+                        <p style="margin: 15px 0;">${descricao}</p>
+                        
+                        <h3 style="margin: 15px 0;">➕ Acompanhamentos</h3>
+                        <div id="acompanhamentos-${id}">
+                            ${renderizarAcompanhamentos(prato.acompanhamentos || [])}
+                        </div>
+                        
+                        <div class="observacao-checkbox">
+                            <input type="checkbox" id="obs-${id}" onchange="toggleObservacaoPrato(${id})">
+                            <label for="obs-${id}">Observação para este item</label>
+                        </div>
+                        
+                        <div class="observacao-campo" id="obs-campo-${id}">
+                            <textarea class="modal-obs" placeholder="Ex: Sem cebola, bem passado..."></textarea>
+                        </div>
+                        
+                        <h3 style="margin: 20px 0;">Preço: R$ ${preco.toFixed(2)}</h3>
+                        
+                        <button class="btn-whatsapp" onclick="adicionarAoCarrinho(${id}, '${nome}', ${preco})">
+                            ➕ ADICIONAR AO CARRINHO
+                        </button>
+                    </div>
+                </div>
+            `
+        })
+        
+        html += `</div>`
+    }
+    
+    container.innerHTML = html
+}
+
+// ============================================
+// RENDERIZAR ACOMPANHAMENTOS
+// ============================================
+function renderizarAcompanhamentos(acompanhamentos) {
+    if (!acompanhamentos || acompanhamentos.length === 0) {
+        return '<p>Nenhum acompanhamento disponível</p>'
+    }
+    
+    let html = ''
+    acompanhamentos.forEach(acomp => {
+        html += `
+            <div class="acompanhamento-item">
+                <input type="checkbox" value="${acomp.nome}" id="acomp-${acomp.id}">
+                <label for="acomp-${acomp.id}">${acomp.nome}</label>
+                <span style="margin-left: auto;">R$ ${acomp.preco.toFixed(2)}</span>
+            </div>
+        `
+    })
+    
+    return html
+}
+
+// ============================================
+// FUNÇÕES DO MODAL DE PRATO
+// ============================================
+function abrirModalPrato(id) {
+    document.getElementById(`modal-${id}`).style.display = 'block'
+}
+
+function fecharModalPrato(id) {
+    document.getElementById(`modal-${id}`).style.display = 'none'
+}
+
+function toggleObservacaoPrato(id) {
+    const checkbox = document.getElementById(`obs-${id}`)
+    const campo = document.getElementById(`obs-campo-${id}`)
+    
+    if (checkbox.checked) {
+        campo.classList.add('mostrar')
+    } else {
+        campo.classList.remove('mostrar')
+    }
+}
+
+// ============================================
+// ADICIONAR AO CARRINHO
+// ============================================
+function adicionarAoCarrinho(id, nome, preco) {
+    // Pegar acompanhamentos selecionados
+    const acompCheckboxes = document.querySelectorAll(`#acompanhamentos-${id} input:checked`)
+    const acompanhamentos = []
+    let precoTotal = preco
+    
+    acompCheckboxes.forEach(cb => {
+        const label = cb.nextElementSibling
+        const acompNome = label.textContent
+        // Extrair preço do texto (assumindo formato "R$ X.XX")
+        const precoMatch = label.nextElementSibling?.textContent.match(/\d+\.?\d*/)
+        if (precoMatch) {
+            precoTotal += parseFloat(precoMatch[0])
+        }
+        acompanhamentos.push(acompNome)
+    })
+    
+    // Pegar observação
+    const obsCampo = document.getElementById(`obs-campo-${id}`).querySelector('textarea')
+    const observacao = obsCampo && obsCampo.value ? obsCampo.value : ''
+    
+    // Adicionar ao carrinho
+    carrinho.push({
+        id: Date.now() + Math.random(),
+        nome,
+        preco: precoTotal,
+        acompanhamentos,
+        observacao
+    })
+    
+    fecharModalPrato(id)
+    atualizarCarrinho()
+    
+    // Feedback visual
+    alert(`✅ ${nome} adicionado ao carrinho!`)
+}
+
+// ============================================
+// FUNÇÕES DO CARRINHO
+// ============================================
+function atualizarCarrinho() {
+    const count = carrinho.length
+    const total = carrinho.reduce((acc, item) => acc + item.preco, 0)
+    
+    document.getElementById('carrinhoCount').innerHTML = count
+    document.getElementById('carrinhoTotal').innerHTML = total.toFixed(2)
+    document.getElementById('modalTotal').innerHTML = total.toFixed(2)
+    
+    // Renderizar itens no modal
+    const container = document.getElementById('carrinhoItens')
+    if (carrinho.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666;">Carrinho vazio</p>'
+        return
+    }
+    
+    let html = ''
+    carrinho.forEach((item, index) => {
+        html += `
+            <div class="modal-item">
+                <div>
+                    <strong>${item.nome}</strong>
+                    ${item.acompanhamentos.length > 0 ? 
+                        '<br><small>Acomp: ' + item.acompanhamentos.join(', ') + '</small>' : ''}
+                    ${item.observacao ? 
+                        '<br><small>Obs: ' + item.observacao + '</small>' : ''}
+                </div>
+                <div>
+                    R$ ${item.preco.toFixed(2)}
+                    <button onclick="removerDoCarrinho(${index})" style="margin-left: 10px;">🗑️</button>
+                </div>
+            </div>
+        `
+    })
+    
+    container.innerHTML = html
+}
+
+function removerDoCarrinho(index) {
+    carrinho.splice(index, 1)
+    atualizarCarrinho()
+}
+
+function toggleObservacao() {
+    const checkbox = document.getElementById('temObservacao')
+    const campo = document.getElementById('observacaoGeralCampo')
+    
+    if (checkbox.checked) {
+        campo.classList.add('mostrar')
+    } else {
+        campo.classList.remove('mostrar')
+    }
+}
+
+function abrirCarrinho() {
+    document.getElementById('modalCarrinho').style.display = 'block'
+}
+
+function fecharCarrinho() {
+    document.getElementById('modalCarrinho').style.display = 'none'
+}
+
+// ============================================
+// ENVIAR PARA WHATSAPP
+// ============================================
+function enviarWhatsApp() {
+    if (carrinho.length === 0) {
+        alert('Carrinho vazio!')
+        return
+    }
+    
+    // Montar mensagem
+    let mensagem = `🍽️ *PEDIDO - ${NOME_RESTAURANTE}*\n`
+    mensagem += `📅 ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}\n`
+    mensagem += `──────────────────\n\n`
+    
+    let total = 0
+    carrinho.forEach(item => {
+        mensagem += `🔸 *${item.nome}*\n`
+        mensagem += `   R$ ${item.preco.toFixed(2)}\n`
+        
+        if (item.acompanhamentos && item.acompanhamentos.length > 0) {
+            mensagem += `   ➕ Acomp: ${item.acompanhamentos.join(', ')}\n`
+        }
+        
+        if (item.observacao) {
+            mensagem += `   📝 Obs: ${item.observacao}\n`
+        }
+        
+        mensagem += `\n`
+        total += item.preco
+    })
+    
+    mensagem += `──────────────────\n`
+    mensagem += `*TOTAL: R$ ${total.toFixed(2)}*\n\n`
+    
+    // Observação geral
+    if (document.getElementById('temObservacao').checked) {
+        const obsGeral = document.getElementById('observacaoGeral').value
+        if (obsGeral) {
+            mensagem += `📌 *Observação geral:*\n${obsGeral}\n\n`
+        }
+    }
+    
+    mensagem += `✅ _Pedido enviado pelo cardápio digital_`
+    
+    // Codificar para URL
+    const mensagemCodificada = encodeURIComponent(mensagem)
+    
+    // Criar link do WhatsApp
+    const url = `https://wa.me/${NUMERO_WHATSAPP}?text=${mensagemCodificada}`
+    
+    // Abrir WhatsApp
+    window.open(url, '_blank')
+    
+    // Limpar carrinho
+    setTimeout(() => {
+        carrinho = []
+        atualizarCarrinho()
+        fecharCarrinho()
+    }, 1000)
+}
+
+// Inicializar
+init()
+</script>
+</body>
+</html>

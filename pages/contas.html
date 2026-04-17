@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Gestão de Contas</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/theme.js"></script>
+<style>
+  .tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 15px;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+  }
+
+  .tab:hover {
+    border-color: #1e7e34;
+  }
+
+  .tab.ativo {
+    background: #1e7e34;
+    color: white;
+    border-color: #1e7e34;
+  }
+
+  .resumo-contas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .resumo-card {
+    background: white;
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+
+  .resumo-card h4 {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+
+  .resumo-card .valor {
+    font-size: 32px;
+    font-weight: bold;
+    color: #e74c3c;
+  }
+
+  .resumo-card .subtitulo {
+    font-size: 12px;
+    color: #999;
+    margin-top: 5px;
+  }
+
+  .conta-card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s;
+  }
+
+  .conta-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  }
+
+  .conta-info {
+    flex: 1;
+  }
+
+  .conta-nome {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+
+  .conta-descricao {
+    color: #666;
+    font-size: 14px;
+  }
+
+  .conta-tipo {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-top: 8px;
+  }
+
+  .tipo-fixa {
+    background: #3498db;
+    color: white;
+  }
+
+  .tipo-pessoal {
+    background: #9b59b6;
+    color: white;
+  }
+
+  .conta-valor {
+    font-size: 24px;
+    font-weight: bold;
+    color: #e74c3c;
+    margin: 0 30px;
+  }
+
+  .conta-acoes {
+    display: flex;
+    gap: 10px;
+  }
+
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.6);
+  }
+
+  .modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 30px;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 500px;
+  }
+
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .close:hover {
+    color: #000;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #1e7e34;
+  }
+
+  .impacto-precificacao {
+    background: #e8f5e9;
+    border-left: 4px solid #1e7e34;
+    padding: 20px;
+    border-radius: 10px;
+    margin-top: 30px;
+  }
+
+  .impacto-precificacao h3 {
+    color: #1e7e34;
+    margin-bottom: 15px;
+  }
+
+  .impacto-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #c8e6c9;
+  }
+
+  .impacto-item:last-child {
+    border-bottom: none;
+  }
+</style>
+</head>
+<body>
+
+<button class="btn-voltar" onclick="window.location.href='../index.html'">←</button>
+<h2 class="titulo-pagina">💰 Gestão de Contas</h2>
+
+<div class="container-central">
+  
+  <!-- Resumo -->
+  <div class="resumo-contas">
+    <div class="resumo-card">
+      <h4>💳 Contas Fixas</h4>
+      <div class="valor" id="totalFixas">R$ 0,00</div>
+      <div class="subtitulo" id="qtdFixas">0 contas</div>
+    </div>
+
+    <div class="resumo-card">
+      <h4>👥 Despesas com Pessoal</h4>
+      <div class="valor" id="totalPessoal">R$ 0,00</div>
+      <div class="subtitulo" id="qtdPessoal">0 funcionários</div>
+    </div>
+
+    <div class="resumo-card" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white;">
+      <h4 style="color: rgba(255,255,255,0.9);">💸 Total Mensal</h4>
+      <div class="valor" style="color: white;" id="totalMensal">R$ 0,00</div>
+      <div class="subtitulo" style="color: rgba(255,255,255,0.9);" id="totalContas">todas as contas</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab ativo" onclick="trocarTab('fixas')">
+      💳 Contas Fixas
+    </div>
+    <div class="tab" onclick="trocarTab('pessoal')">
+      👥 Pessoal
+    </div>
+  </div>
+
+  <!-- Botão Adicionar -->
+  <button class="btn-verde" onclick="abrirModal()" style="margin-bottom: 20px;">
+    ➕ Adicionar Conta
+  </button>
+
+  <!-- Lista de Contas -->
+  <div id="listaContas"></div>
+
+  <!-- Impacto na Precificação -->
+  <div class="impacto-precificacao">
+    <h3>📊 Impacto na Precificação dos Pratos</h3>
+    <p style="margin-bottom: 15px;">
+      As contas mensais são diluídas no custo dos pratos para garantir uma precificação adequada que cubra todos os custos operacionais.
+    </p>
+    
+    <div class="impacto-item">
+      <span><strong>Custo mensal total:</strong></span>
+      <span id="custoMensalTotal">R$ 0,00</span>
+    </div>
+    
+    <div class="impacto-item">
+      <span><strong>Estimativa de pedidos/mês:</strong></span>
+      <input type="number" id="estimativaPedidos" value="300" min="1" 
+             style="width: 100px; padding: 5px; border-radius: 5px; border: 1px solid #ccc;"
+             onchange="calcularImpacto()">
+    </div>
+    
+    <div class="impacto-item">
+      <span><strong>Custo adicional por prato:</strong></span>
+      <span style="font-size: 20px; font-weight: bold; color: #1e7e34;" id="custoPorPrato">R$ 0,00</span>
+    </div>
+    
+    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px;">
+      <strong>💡 Dica:</strong> Este valor deve ser somado ao custo de cada prato para garantir que suas despesas fixas sejam cobertas.
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal Adicionar/Editar -->
+<div id="modalConta" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="fecharModal()">&times;</span>
+    <h2 id="tituloModal">➕ Adicionar Conta</h2>
+    
+    <form id="formConta" onsubmit="salvarConta(event)">
+      <div class="form-group">
+        <label>Tipo de Conta *</label>
+        <select id="tipoConta" required>
+          <option value="fixa">💳 Conta Fixa (aluguel, água, luz, etc.)</option>
+          <option value="pessoal">👥 Despesa com Pessoal (salários, encargos)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Nome *</label>
+        <input type="text" id="nomeConta" placeholder="Ex: Aluguel, Salário Cozinheiro" required>
+      </div>
+
+      <div class="form-group">
+        <label>Descrição</label>
+        <textarea id="descricaoConta" placeholder="Detalhes adicionais (opcional)" rows="3"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Valor Mensal * (R$)</label>
+        <input type="number" id="valorConta" step="0.01" min="0" placeholder="0.00" required>
+      </div>
+
+      <div style="display: flex; gap: 15px; margin-top: 30px;">
+        <button type="button" onclick="fecharModal()" class="btn-cancelar" style="flex: 1;">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-verde" style="flex: 1;">
+          💾 Salvar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+let todasContas = [];
+let tabAtiva = 'fixas';
+let contaEditando = null;
+
+// ==========================================
+// CARREGAR CONTAS
+// ==========================================
+async function carregarContas() {
+  try {
+    todasContas = await window.api.getContas();
+    atualizarResumo();
+    exibirContas();
+    calcularImpacto();
+  } catch (error) {
+    console.error('Erro ao carregar contas:', error);
+    todasContas = [];
+  }
+}
+
+// ==========================================
+// ATUALIZAR RESUMO
+// ==========================================
+function atualizarResumo() {
+  const fixas = todasContas.filter(c => c.tipo === 'fixa');
+  const pessoal = todasContas.filter(c => c.tipo === 'pessoal');
+  
+  const totalFixas = fixas.reduce((sum, c) => sum + c.valor, 0);
+  const totalPessoal = pessoal.reduce((sum, c) => sum + c.valor, 0);
+  const totalMensal = totalFixas + totalPessoal;
+  
+  document.getElementById('totalFixas').textContent = `R$ ${totalFixas.toFixed(2)}`;
+  document.getElementById('qtdFixas').textContent = `${fixas.length} conta${fixas.length !== 1 ? 's' : ''}`;
+  
+  document.getElementById('totalPessoal').textContent = `R$ ${totalPessoal.toFixed(2)}`;
+  document.getElementById('qtdPessoal').textContent = `${pessoal.length} ${pessoal.length !== 1 ? 'colaboradores' : 'colaborador'}`;
+  
+  document.getElementById('totalMensal').textContent = `R$ ${totalMensal.toFixed(2)}`;
+  document.getElementById('totalContas').textContent = `${todasContas.length} conta${todasContas.length !== 1 ? 's' : ''}`;
+  
+  document.getElementById('custoMensalTotal').textContent = `R$ ${totalMensal.toFixed(2)}`;
+}
+
+// ==========================================
+// TROCAR TAB
+// ==========================================
+function trocarTab(tab) {
+  tabAtiva = tab;
+  
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('ativo'));
+  event.target.classList.add('ativo');
+  
+  exibirContas();
+}
+
+// ==========================================
+// EXIBIR CONTAS
+// ==========================================
+function exibirContas() {
+  const lista = document.getElementById('listaContas');
+  const contasFiltradas = todasContas.filter(c => c.tipo === tabAtiva);
+  
+  if (contasFiltradas.length === 0) {
+    lista.innerHTML = `
+      <div style="text-align: center; padding: 60px 20px; color: #999;">
+        <div style="font-size: 60px; margin-bottom: 20px;">📋</div>
+        <h3>Nenhuma conta cadastrada</h3>
+        <p>Clique em "Adicionar Conta" para começar</p>
+      </div>
+    `;
+    return;
+  }
+  
+  lista.innerHTML = '';
+  
+  contasFiltradas.forEach(conta => {
+    const card = document.createElement('div');
+    card.className = 'conta-card';
+    card.innerHTML = `
+      <div class="conta-info">
+        <div class="conta-nome">${conta.nome}</div>
+        ${conta.descricao ? `<div class="conta-descricao">${conta.descricao}</div>` : ''}
+        <span class="conta-tipo tipo-${conta.tipo}">
+          ${conta.tipo === 'fixa' ? '💳 Fixa' : '👥 Pessoal'}
+        </span>
+      </div>
+      <div class="conta-valor">R$ ${conta.valor.toFixed(2)}</div>
+      <div class="conta-acoes">
+        <button class="btn-editar" onclick="editarConta(${conta.id})">✏️ Editar</button>
+        <button class="btn-deletar" onclick="excluirConta(${conta.id})">🗑️ Excluir</button>
+      </div>
+    `;
+    lista.appendChild(card);
+  });
+}
+
+// ==========================================
+// ABRIR MODAL
+// ==========================================
+function abrirModal(id = null) {
+  const modal = document.getElementById('modalConta');
+  const titulo = document.getElementById('tituloModal');
+  
+  if (id) {
+    contaEditando = todasContas.find(c => c.id === id);
+    titulo.textContent = '✏️ Editar Conta';
+    
+    document.getElementById('tipoConta').value = contaEditando.tipo;
+    document.getElementById('nomeConta').value = contaEditando.nome;
+    document.getElementById('descricaoConta').value = contaEditando.descricao || '';
+    document.getElementById('valorConta').value = contaEditando.valor;
+  } else {
+    contaEditando = null;
+    titulo.textContent = '➕ Adicionar Conta';
+    document.getElementById('formConta').reset();
+    document.getElementById('tipoConta').value = tabAtiva;
+  }
+  
+  modal.style.display = 'block';
+}
+
+// ==========================================
+// FECHAR MODAL
+// ==========================================
+function fecharModal() {
+  document.getElementById('modalConta').style.display = 'none';
+  contaEditando = null;
+}
+
+// ==========================================
+// SALVAR CONTA
+// ==========================================
+async function salvarConta(event) {
+  event.preventDefault();
+  
+  const conta = {
+    tipo: document.getElementById('tipoConta').value,
+    nome: document.getElementById('nomeConta').value.trim(),
+    descricao: document.getElementById('descricaoConta').value.trim(),
+    valor: parseFloat(document.getElementById('valorConta').value)
+  };
+  
+  if (contaEditando) {
+    conta.id = contaEditando.id;
+    await window.api.updateConta(conta.id, conta);
+  } else {
+    conta.id = Date.now();
+    await window.api.saveConta(conta);
+  }
+  
+  fecharModal();
+  await carregarContas();
+}
+
+// ==========================================
+// EDITAR CONTA
+// ==========================================
+function editarConta(id) {
+  abrirModal(id);
+}
+
+// ==========================================
+// EXCLUIR CONTA
+// ==========================================
+async function excluirConta(id) {
+  const conta = todasContas.find(c => c.id === id);
+  
+  if (confirm(`Deseja realmente excluir a conta "${conta.nome}"?`)) {
+    await window.api.deleteConta(id);
+    await carregarContas();
+  }
+}
+
+// ==========================================
+// CALCULAR IMPACTO NA PRECIFICAÇÃO
+// ==========================================
+function calcularImpacto() {
+  const totalMensal = todasContas.reduce((sum, c) => sum + c.valor, 0);
+  const estimativaPedidos = parseInt(document.getElementById('estimativaPedidos').value) || 300;
+  
+  const custoPorPrato = totalMensal / estimativaPedidos;
+  
+  document.getElementById('custoPorPrato').textContent = `R$ ${custoPorPrato.toFixed(2)}`;
+}
+
+// Fechar modal ao clicar fora
+window.onclick = function(event) {
+  const modal = document.getElementById('modalConta');
+  if (event.target == modal) {
+    fecharModal();
+  }
+}
+
+// Inicializar
+carregarContas();
+</script>
+
+</body>
+</html>

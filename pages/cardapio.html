@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Cardápio</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/theme.js"></script>
+</head>
+<body>
+
+<button class="btn-voltar" onclick="window.location.href='../index.html'">←</button>
+<h2 class="titulo-pagina">Cadastro de Pratos</h2>
+
+<div style="display:flex; gap:50px; margin-top:80px; padding:0 60px;">
+
+  <!-- LISTA -->
+  <div style="width:40%;">
+    <h3>Pratos</h3>
+    <div id="listaPratos" class="lista"></div>
+  </div>
+
+  <!-- CADASTRO -->
+  <div style="width:40%; background:white; padding:30px; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,0.1);">
+    <h3>Novo Prato</h3>
+
+    <input id="nome" placeholder="Nome">
+    <input id="descricao" placeholder="Descrição">
+
+    <button class="btn-verde" onclick="salvar()">Salvar</button>
+  </div>
+
+</div>
+
+<script>
+let editIndex = null
+
+async function salvar(){
+  const nome = document.getElementById('nome').value
+  const descricao = document.getElementById('descricao').value
+
+  if(!nome || !descricao) return alert("Preencha tudo")
+
+  const pratos = await window.api.getProdutos()
+
+  if(editIndex !== null){
+    pratos[editIndex] = { nome, descricao }
+    editIndex = null
+  } else {
+    pratos.push({ nome, descricao })
+  }
+
+  await window.api.updateProdutos(pratos)
+
+  document.getElementById('nome').value = ''
+  document.getElementById('descricao').value = ''
+
+  carregar()
+}
+
+async function carregar(){
+  const pratos = await window.api.getProdutos()
+  const lista = document.getElementById('listaPratos')
+  lista.innerHTML = ''
+
+  pratos.forEach((p,index)=>{
+    lista.innerHTML += `
+      <div class="lista-item">
+        <span>${p.nome}</span>
+        <div>
+          <button class="btn-editar" onclick="editar(${index})">✏</button>
+          <button class="btn-vermelho" onclick="remover(${index})">🗑</button>
+        </div>
+      </div>
+    `
+  })
+}
+
+async function editar(index){
+  const pratos = await window.api.getProdutos()
+  document.getElementById('nome').value = pratos[index].nome
+  document.getElementById('descricao').value = pratos[index].descricao
+  editIndex = index
+}
+
+async function remover(index){
+  const pratos = await window.api.getProdutos()
+  pratos.splice(index,1)
+  await window.api.updateProdutos(pratos)
+  carregar()
+}
+
+carregar()
+</script>
+
+</body>
+</html>

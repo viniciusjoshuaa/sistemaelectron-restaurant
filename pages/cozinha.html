@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Cozinha - Pedidos</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/theme.js"></script>
+<style>
+  .pedido-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-left: 5px solid #f39c12;
+    transition: all 0.3s;
+    position: relative;
+  }
+
+  .pedido-card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+  }
+  
+  .status-pendente { border-left-color: #f39c12; }
+  .status-preparando { border-left-color: #3498db; }
+  .status-pronto { border-left-color: #2ecc71; }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: bold;
+    margin-right: 10px;
+  }
+  
+  .badge-pendente { background: #f39c12; color: white; }
+  .badge-preparando { background: #3498db; color: white; }
+  .badge-pronto { background: #2ecc71; color: white; }
+
+  .origem-badge {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: #9b59b6;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+
+  .origem-badge.online {
+    background: #e74c3c;
+  }
+
+  .pedido-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+
+  .pedido-info {
+    font-size: 16px;
+    font-weight: bold;
+  }
+
+  .cliente-info {
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 8px;
+    margin: 10px 0;
+  }
+
+  .cliente-info strong {
+    color: #1e7e34;
+  }
+
+  .itens-lista {
+    margin: 15px 0;
+    padding-left: 0;
+  }
+
+  .item-pedido {
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .item-pedido::before {
+    content: '•';
+    color: #1e7e34;
+    font-size: 20px;
+    font-weight: bold;
+  }
+
+  .pedido-acoes {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+  }
+
+  .btn-acao {
+    flex: 1;
+    min-width: 120px;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .btn-imprimir {
+    background: #3498db;
+    color: white;
+  }
+
+  .btn-imprimir:hover {
+    background: #2980b9;
+  }
+
+  .btn-detalhes {
+    background: #95a5a6;
+    color: white;
+  }
+
+  .btn-detalhes:hover {
+    background: #7f8c8d;
+  }
+
+  .btn-pronto {
+    background: #2ecc71;
+    color: white;
+  }
+
+  .btn-pronto:hover {
+    background: #27ae60;
+  }
+
+  .btn-cancelar-pedido {
+    background: #e74c3c;
+    color: white;
+  }
+
+  .btn-cancelar-pedido:hover {
+    background: #c0392b;
+  }
+
+  .filtros-container {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+  }
+
+  .filtros-container button {
+    padding: 12px 20px;
+    border: 2px solid #1e7e34;
+    background: white;
+    color: #1e7e34;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .filtros-container button:hover,
+  .filtros-container button.ativo {
+    background: #1e7e34;
+    color: white;
+  }
+
+  .contador-pedidos {
+    background: #1e7e34;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 10px;
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 18px;
+    font-weight: bold;
+  }
+
+  /* Modal */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.6);
+  }
+
+  .modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 30px;
+    border: 1px solid #888;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 32px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 20px;
+  }
+
+  .close:hover,
+  .close:focus {
+    color: #000;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e0e0e0;
+  }
+
+  .impressao-aviso {
+    background: #e8f5e9;
+    border-left: 4px solid #2ecc71;
+    padding: 15px;
+    margin: 10px 0;
+    border-radius: 5px;
+  }
+
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    
+    #areiaImpressao, #areiaImpressao * {
+      visibility: visible;
+    }
+    
+    #areiaImpressao {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+
+<button class="btn-voltar" onclick="window.location.href='../index.html'">←</button>
+<h2 class="titulo-pagina">👨‍🍳 Cozinha - Pedidos</h2>
+
+<div class="container-central">
+  <div class="contador-pedidos" id="contadorPedidos">
+    Carregando pedidos...
+  </div>
+
+  <div class="filtros-container">
+    <button class="ativo" onclick="filtrar('todos')">📋 Todos</button>
+    <button onclick="filtrar('pendente')">⏳ Pendentes</button>
+    <button onclick="filtrar('preparando')">👨‍🍳 Em Preparo</button>
+    <button onclick="filtrar('pronto')">✅ Prontos</button>
+  </div>
+  
+  <div id="listaPedidos" class="lista"></div>
+</div>
+
+<!-- Modal de Detalhes -->
+<div id="modalDetalhes" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>📋 Detalhes do Pedido</h2>
+      <span class="close" onclick="fecharModal()">&times;</span>
+    </div>
+    <div id="conteudoModal"></div>
+  </div>
+</div>
+
+<!-- Área de Impressão (oculta) -->
+<div id="areiaImpressao" style="display: none;"></div>
+
+<script>
+let todosPedidos = []
+let filtroAtual = 'todos'
+
+// ==========================================
+// CARREGAR PEDIDOS
+// ==========================================
+async function carregarPedidos() {
+  try {
+    todosPedidos = await window.api.getPedidosPendentes()
+    filtrar(filtroAtual)
+    atualizarContador()
+  } catch (error) {
+    console.error('Erro ao carregar pedidos:', error)
+  }
+}
+
+// ==========================================
+// FILTRAR PEDIDOS
+// ==========================================
+function filtrar(status) {
+  filtroAtual = status
+  
+  // Atualizar botões ativos
+  document.querySelectorAll('.filtros-container button').forEach(btn => {
+    btn.classList.remove('ativo')
+  })
+  event?.target?.classList.add('ativo')
+  
+  const lista = document.getElementById('listaPedidos')
+  lista.innerHTML = ''
+  
+  let pedidosFiltrados = todosPedidos
+  if (status !== 'todos') {
+    pedidosFiltrados = todosPedidos.filter(p => p.status === status)
+  }
+  
+  if (pedidosFiltrados.length === 0) {
+    lista.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">Nenhum pedido encontrado.</p>'
+    return
+  }
+  
+  pedidosFiltrados.forEach(p => {
+    const card = criarCardPedido(p)
+    lista.appendChild(card)
+  })
+}
+
+// ==========================================
+// CRIAR CARD DO PEDIDO
+// ==========================================
+function criarCardPedido(pedido) {
+  const div = document.createElement('div')
+  div.className = `pedido-card status-${pedido.status}`
+  
+  // Agrupar itens repetidos
+  const itensAgrupados = {}
+  pedido.itens.forEach(item => {
+    itensAgrupados[item] = (itensAgrupados[item] || 0) + 1
+  })
+  
+  // Cliente info (se for online)
+  let clienteHtml = ''
+  if (pedido.cliente) {
+    clienteHtml = `
+      <div class="cliente-info">
+        <strong>👤 Cliente:</strong> ${pedido.cliente.nome}<br>
+        <strong>📞 Telefone:</strong> ${pedido.cliente.telefone}
+      </div>
+    `
+  }
+  
+  // Origem badge
+  const origemHtml = pedido.origem === 'online' ? 
+    '<div class="origem-badge online">🌐 ONLINE</div>' : 
+    '<div class="origem-badge">🏠 LOCAL</div>'
+  
+  div.innerHTML = `
+    ${origemHtml}
+    
+    <div class="pedido-header">
+      <div class="pedido-info">
+        <span class="status-badge badge-${pedido.status}">${pedido.status.toUpperCase()}</span>
+        <span>#${pedido.id.toString().slice(-6)}</span>
+      </div>
+      <div style="text-align: right;">
+        <div>${pedido.data}</div>
+        <div style="font-size: 14px; color: #666;">${pedido.hora}</div>
+      </div>
+    </div>
+    
+    ${clienteHtml}
+    
+    <div class="itens-lista">
+      ${Object.entries(itensAgrupados).map(([item, qtd]) => 
+        `<div class="item-pedido">${qtd}x ${item}</div>`
+      ).join('')}
+    </div>
+    
+    ${pedido.observacao ? `
+      <div style="background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0;">
+        <strong>📝 Observação:</strong> ${pedido.observacao}
+      </div>
+    ` : ''}
+    
+    <div class="pedido-acoes">
+      <button class="btn-acao btn-imprimir" onclick="imprimirPedido(${pedido.id})">
+        🖨️ Imprimir
+      </button>
+      <button class="btn-acao btn-detalhes" onclick="abrirDetalhes(${pedido.id})">
+        📋 Detalhes
+      </button>
+      ${pedido.status !== 'pronto' && pedido.status !== 'entregue' ? `
+        <button class="btn-acao btn-pronto" onclick="marcarComoPronto(${pedido.id})">
+          ✅ Pronto
+        </button>
+      ` : ''}
+      ${pedido.status !== 'cancelado' ? `
+        <button class="btn-acao btn-cancelar-pedido" onclick="cancelarPedido(${pedido.id})">
+          ❌ Cancelar
+        </button>
+      ` : ''}
+    </div>
+  `
+  
+  return div
+}
+
+// ==========================================
+// ATUALIZAR CONTADOR
+// ==========================================
+function atualizarContador() {
+  const contador = document.getElementById('contadorPedidos')
+  
+  const pendentes = todosPedidos.filter(p => p.status === 'pendente').length
+  const preparando = todosPedidos.filter(p => p.status === 'preparando').length
+  const prontos = todosPedidos.filter(p => p.status === 'pronto').length
+  
+  contador.innerHTML = `
+    📦 Total: ${todosPedidos.length} pedidos | 
+    ⏳ Pendentes: ${pendentes} | 
+    👨‍🍳 Preparando: ${preparando} | 
+    ✅ Prontos: ${prontos}
+  `
+}
+
+// ==========================================
+// IMPRIMIR PEDIDO
+// ==========================================
+function imprimirPedido(id) {
+  const pedido = todosPedidos.find(p => p.id === id)
+  if (!pedido) return
+  
+  // Agrupar itens
+  const itensAgrupados = {}
+  pedido.itens.forEach(item => {
+    itensAgrupados[item] = (itensAgrupados[item] || 0) + 1
+  })
+  
+  const areaImpressao = document.getElementById('areiaImpressao')
+  areaImpressao.innerHTML = `
+    <div style="font-family: 'Courier New', monospace; max-width: 300px; margin: 0 auto; padding: 20px;">
+      <div style="text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px;">
+        🍽️ PEDIDO #${pedido.id.toString().slice(-6)}
+      </div>
+      
+      <div style="border-top: 2px dashed #000; border-bottom: 2px dashed #000; padding: 10px 0; margin: 10px 0;">
+        <div><strong>Data:</strong> ${pedido.data}</div>
+        <div><strong>Hora:</strong> ${pedido.hora}</div>
+        <div><strong>Status:</strong> ${pedido.status.toUpperCase()}</div>
+        ${pedido.origem ? `<div><strong>Origem:</strong> ${pedido.origem.toUpperCase()}</div>` : ''}
+      </div>
+      
+      ${pedido.cliente ? `
+        <div style="border-bottom: 2px dashed #000; padding: 10px 0; margin: 10px 0;">
+          <div><strong>Cliente:</strong> ${pedido.cliente.nome}</div>
+          <div><strong>Telefone:</strong> ${pedido.cliente.telefone}</div>
+        </div>
+      ` : ''}
+      
+      <div style="margin: 20px 0;">
+        <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">ITENS:</div>
+        ${Object.entries(itensAgrupados).map(([item, qtd]) => 
+          `<div style="margin: 5px 0;">${qtd}x ${item}</div>`
+        ).join('')}
+      </div>
+      
+      ${pedido.observacao ? `
+        <div style="border-top: 2px dashed #000; padding: 10px 0; margin: 10px 0;">
+          <div style="font-weight: bold;">OBSERVAÇÃO:</div>
+          <div>${pedido.observacao}</div>
+        </div>
+      ` : ''}
+      
+      <div style="text-align: center; margin-top: 30px; font-size: 12px;">
+        Impresso em ${new Date().toLocaleString('pt-BR')}
+      </div>
+    </div>
+  `
+  
+  areaImpressao.style.display = 'block'
+  window.print()
+  areaImpressao.style.display = 'none'
+}
+
+// ==========================================
+// ABRIR DETALHES
+// ==========================================
+function abrirDetalhes(id) {
+  const pedido = todosPedidos.find(p => p.id === id)
+  if (!pedido) return
+  
+  const modal = document.getElementById('modalDetalhes')
+  const conteudo = document.getElementById('conteudoModal')
+  
+  // Agrupar itens
+  const itensAgrupados = {}
+  pedido.itens.forEach(item => {
+    itensAgrupados[item] = (itensAgrupados[item] || 0) + 1
+  })
+  
+  conteudo.innerHTML = `
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+      <h3>Pedido #${pedido.id.toString().slice(-6)}</h3>
+      <p><strong>Data:</strong> ${pedido.data} às ${pedido.hora}</p>
+      <p><strong>Status Atual:</strong> <span class="status-badge badge-${pedido.status}">${pedido.status.toUpperCase()}</span></p>
+      ${pedido.origem ? `<p><strong>Origem:</strong> ${pedido.origem === 'online' ? '🌐 Online' : '🏠 Local'}</p>` : ''}
+    </div>
+    
+    ${pedido.cliente ? `
+      <div style="background: #e8f5e9; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+        <h4>👤 Dados do Cliente</h4>
+        <p><strong>Nome:</strong> ${pedido.cliente.nome}</p>
+        <p><strong>Telefone:</strong> ${pedido.cliente.telefone}</p>
+      </div>
+    ` : ''}
+    
+    <div style="margin: 20px 0;">
+      <h4>🍽️ Itens do Pedido</h4>
+      <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px;">
+        ${Object.entries(itensAgrupados).map(([item, qtd]) => 
+          `<div style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+            <strong>${qtd}x</strong> ${item}
+          </div>`
+        ).join('')}
+      </div>
+    </div>
+    
+    ${pedido.observacao ? `
+      <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin: 20px 0;">
+        <h4>📝 Observações</h4>
+        <p>${pedido.observacao}</p>
+      </div>
+    ` : ''}
+    
+    <div style="margin-top: 30px;">
+      <h4>🔄 Alterar Status</h4>
+      <select id="novoStatus" style="width: 100%; padding: 12px; border-radius: 8px; border: 2px solid #e0e0e0; font-size: 16px;">
+        <option value="pendente" ${pedido.status === 'pendente' ? 'selected' : ''}>⏳ Pendente</option>
+        <option value="preparando" ${pedido.status === 'preparando' ? 'selected' : ''}>👨‍🍳 Preparando</option>
+        <option value="pronto" ${pedido.status === 'pronto' ? 'selected' : ''}>✅ Pronto</option>
+        <option value="entregue" ${pedido.status === 'entregue' ? 'selected' : ''}>🏁 Entregue</option>
+        <option value="cancelado" ${pedido.status === 'cancelado' ? 'selected' : ''}>❌ Cancelado</option>
+      </select>
+    </div>
+    
+    <div style="display: flex; gap: 15px; margin-top: 30px;">
+      <button onclick="salvarStatus(${pedido.id})" class="btn-verde" style="flex: 1; padding: 15px;">
+        💾 Salvar Status
+      </button>
+      <button onclick="imprimirPedido(${pedido.id}); fecharModal()" class="btn-editar" style="flex: 1; padding: 15px;">
+        🖨️ Imprimir
+      </button>
+    </div>
+  `
+  
+  modal.style.display = 'block'
+}
+
+// ==========================================
+// FECHAR MODAL
+// ==========================================
+function fecharModal() {
+  document.getElementById('modalDetalhes').style.display = 'none'
+}
+
+// ==========================================
+// SALVAR STATUS
+// ==========================================
+async function salvarStatus(id) {
+  const novoStatus = document.getElementById('novoStatus').value
+  await mudarStatus(id, novoStatus)
+  fecharModal()
+}
+
+// ==========================================
+// MUDAR STATUS
+// ==========================================
+async function mudarStatus(id, novoStatus) {
+  try {
+    await window.api.atualizarStatusPedido(id, novoStatus)
+    await carregarPedidos()
+  } catch (error) {
+    console.error('Erro ao mudar status:', error)
+    alert('Erro ao alterar status do pedido')
+  }
+}
+
+// ==========================================
+// MARCAR COMO PRONTO
+// ==========================================
+async function marcarComoPronto(id) {
+  if (confirm('Marcar este pedido como pronto?')) {
+    await mudarStatus(id, 'pronto')
+  }
+}
+
+// ==========================================
+// CANCELAR PEDIDO
+// ==========================================
+async function cancelarPedido(id) {
+  const motivo = prompt('Motivo do cancelamento (opcional):')
+  if (motivo !== null) {
+    await mudarStatus(id, 'cancelado')
+  }
+}
+
+// Fechar modal ao clicar fora
+window.onclick = function(event) {
+  const modal = document.getElementById('modalDetalhes')
+  if (event.target == modal) {
+    fecharModal()
+  }
+}
+
+// Atualizar a cada 10 segundos
+setInterval(carregarPedidos, 10000)
+carregarPedidos()
+</script>
+
+</body>
+</html>

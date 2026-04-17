@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clientes</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/theme.js"></script>
+</head>
+<body class="page-shell">
+<button class="btn-voltar" onclick="window.location.href='../index.html'">←</button>
+<h2 class="titulo-pagina">Cadastro de Clientes</h2>
+
+<main class="page-content">
+  <div class="toolbar" style="justify-content:flex-end; margin-bottom:16px;">
+    <button class="theme-toggle btn-padrao" type="button" data-theme-toggle aria-pressed="false">☀️ Modo Claro</button>
+  </div>
+
+  <section class="page-grid-2">
+    <div class="panel">
+      <h3 class="section-title">Clientes cadastrados</h3>
+      <div id="resumoClientes" class="empty-state">Carregando clientes...</div>
+      <div id="listaClientes" class="lista" style="margin-top:16px;"></div>
+    </div>
+
+    <div class="panel">
+      <h3 class="section-title">Novo cliente</h3>
+      <label for="nome">Nome</label>
+      <input id="nome" placeholder="Nome completo">
+
+      <label for="telefone">Telefone</label>
+      <input id="telefone" placeholder="(00) 00000-0000">
+
+      <label for="endereco">Endereço</label>
+      <input id="endereco" placeholder="Rua, número, bairro">
+
+      <div class="toolbar" style="margin-top:16px;">
+        <button class="btn-verde btn-padrao" onclick="salvar()">Salvar cliente</button>
+        <button class="btn-padrao" style="background:var(--surface-strong);color:var(--text);" onclick="limparFormulario()">Limpar</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="popupCliente" class="popup hidden">
+  <div class="popup-content" data-theme-role="surface">
+    <h2>Dados do cliente</h2>
+    <p><strong>Nome:</strong> <span id="popupNome"></span></p>
+    <p><strong>Telefone:</strong> <span id="popupTelefone"></span></p>
+    <p><strong>Endereço:</strong> <span id="popupEndereco"></span></p>
+    <button class="btn-verde btn-padrao" onclick="fecharPopupCliente()">Fechar</button>
+  </div>
+</div>
+
+<script>
+function limparFormulario() {
+  document.getElementById('nome').value = ''
+  document.getElementById('telefone').value = ''
+  document.getElementById('endereco').value = ''
+  document.getElementById('nome').focus()
+}
+
+async function salvar(){
+  const nome = document.getElementById('nome').value.trim()
+  const telefone = document.getElementById('telefone').value.trim()
+  const endereco = document.getElementById('endereco').value.trim()
+
+  if(!nome) return alert('Preencha o nome do cliente.')
+
+  await window.api.saveCliente({ nome, telefone, endereco })
+  limparFormulario()
+  carregar()
+}
+
+async function carregar(){
+  const clientes = await window.api.getClientes()
+  const lista = document.getElementById('listaClientes')
+  const resumo = document.getElementById('resumoClientes')
+  lista.innerHTML = ''
+
+  if (!clientes.length) {
+    resumo.textContent = 'Nenhum cliente cadastrado ainda.'
+    return
+  }
+
+  resumo.textContent = `${clientes.length} cliente(s) cadastrados.`
+
+  clientes
+    .sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'))
+    .forEach((c) => {
+      lista.innerHTML += `
+        <div class="lista-item" data-theme-role="surface">
+          <div>
+            <strong>${c.nome}</strong>
+            <div style="margin-top:6px;color:var(--text-muted);font-size:14px;">
+              ${c.telefone || 'Sem telefone'} • ${c.endereco || 'Sem endereço'}
+            </div>
+          </div>
+
+          <div class="toolbar" style="justify-content:flex-end;">
+            <button class="btn-padrao" style="background:var(--surface-strong);color:var(--text);" onclick="verCliente(${c.id})">Ver</button>
+            <button class="btn-editar" onclick="editarCliente(${c.id})">Editar</button>
+            <button class="btn-vermelho btn-padrao" onclick="removerCliente(${c.id})">Excluir</button>
+          </div>
+        </div>
+      `
+    })
+
+  window.MandirTheme?.normalizeThemedElements?.()
+}
+
+async function editarCliente(id){
+  const clientes = await window.api.getClientes()
+  const cliente = clientes.find(c => c.id === id)
+  if (!cliente) return
+
+  const novoNome = prompt('Nome:', cliente.nome)
+  if(!novoNome) return
+
+  const novoTelefone = prompt('Telefone:', cliente.telefone || '')
+  const novoEndereco = prompt('Endereço:', cliente.endereco || '')
+
+  const novaLista = clientes.map(c =>
+    c.id === id
+      ? { ...c, nome: novoNome.trim(), telefone: (novoTelefone || '').trim(), endereco: (novoEndereco || '').trim() }
+      : c
+  )
+
+  await window.api.updateClientes(novaLista)
+  carregar()
+}
+
+async function removerCliente(id){
+  if(!confirm('Deseja excluir este cliente?')) return
+  await window.api.deleteCliente(id)
+  carregar()
+}
+
+async function verCliente(id){
+  const clientes = await window.api.getClientes()
+  const cliente = clientes.find(c => c.id === id)
+  if (!cliente) return
+
+  document.getElementById('popupNome').innerText = cliente.nome
+  document.getElementById('popupTelefone').innerText = cliente.telefone || '-'
+  document.getElementById('popupEndereco').innerText = cliente.endereco || '-'
+  document.getElementById('popupCliente').classList.remove('hidden')
+}
+
+function fecharPopupCliente(){
+  document.getElementById('popupCliente').classList.add('hidden')
+}
+
+carregar()
+</script>
+</body>
+</html>

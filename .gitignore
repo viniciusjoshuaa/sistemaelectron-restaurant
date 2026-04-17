@@ -1,0 +1,11 @@
+node_modules/
+dist/
+out/
+coverage/
+.npm/
+*.log
+whatsapp-session/
+/data/*.backup
+/data/*.tmp
+.DS_Store
+Thumbs.db

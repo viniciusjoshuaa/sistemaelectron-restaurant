@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Cardápio do Dia</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/theme.js"></script>
+<style>
+  /* ESTILOS ESPECÍFICOS */
+  .btn-cliente {
+    background: #1e7e34;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-left: 10px;
+    transition: 0.3s;
+  }
+  
+  .btn-cliente:hover {
+    background: #145c26;
+    transform: scale(1.05);
+  }
+  
+  .area-oficial {
+    background: #d8f3dc;
+    padding: 20px;
+    border-radius: 15px;
+    margin: 20px 0;
+    border: 2px solid #1e7e34;
+  }
+  
+  .toast-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #2ecc71;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    animation: slideIn 0.3s;
+    z-index: 1000;
+  }
+  
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  
+  .prato-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border-left: 4px solid #1e7e34;
+  }
+  
+  .prato-info {
+    flex: 1;
+  }
+  
+  .prato-nome {
+    font-weight: bold;
+    font-size: 16px;
+  }
+  
+  .prato-desc {
+    color: #666;
+    font-size: 13px;
+    margin-top: 3px;
+  }
+  
+  .prato-preco {
+    background: #1e7e34;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 14px;
+    margin-right: 15px;
+  }
+  
+  .qrcode-container {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    margin-top: 20px;
+    border: 1px solid #ddd;
+  }
+  
+  .qrcode-container img {
+    max-width: 200px;
+    margin: 0 auto;
+  }
+  
+  .link-compartilhar {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 8px;
+  }
+  
+  .link-compartilhar input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 12px;
+  }
+  
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: bold;
+    margin-left: 10px;
+  }
+  
+  .badge-ativo {
+    background: #2ecc71;
+    color: white;
+  }
+  
+  .badge-inativo {
+    background: #95a5a6;
+    color: white;
+  }
+
+  /* ESTILOS NOVOS PARA WHATSAPP */
+  .whatsapp-config {
+    margin-top: 30px;
+    padding: 20px;
+    background: #e8f5e9;
+    border-radius: 15px;
+    border: 2px solid #1e7e34;
+  }
+  
+  .whatsapp-config h3 {
+    color: #1e7e34;
+    margin-bottom: 15px;
+  }
+  
+  .whatsapp-preview {
+    margin-top: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+    border-left: 4px solid #25D366;
+  }
+  
+  .whatsapp-preview pre {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+</style>
+</head>
+<body>
+
+<button class="btn-voltar" onclick="window.location.href='../index.html'">←</button>
+
+<h2 class="titulo-pagina">📅 Cardápio do Dia</h2>
+
+<div class="container-central">
+
+  <!-- STATUS DO DIA -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h3>📋 Status do Dia</h3>
+    <div>
+      <span class="status-badge" id="statusCardapio">⏳ Carregando...</span>
+    </div>
+  </div>
+
+  <!-- SEÇÃO 1: PRATOS CADASTRADOS -->
+  <div class="card" style="margin-bottom: 30px;">
+    <h3>📋 Pratos Disponíveis</h3>
+    <p style="color: #666; font-size: 13px; margin-bottom: 15px;">
+      Clique nos pratos para adicionar ao cardápio de hoje
+    </p>
+    <div id="listaPratos" class="lista"></div>
+  </div>
+
+  <!-- SEÇÃO 2: MONTAGEM DO DIA -->
+  <div class="card" style="margin-bottom: 30px;">
+    <h3>⚙️ Cardápio de Hoje</h3>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <span><strong id="totalSelecionados">0</strong> pratos selecionados</span>
+      <button class="btn-vermelho" onclick="limparSelecao()" style="padding: 5px 15px;">🗑️ Limpar</button>
+    </div>
+    
+    <div id="areaHoje" class="lista"></div>
+    
+    <button class="btn-verde" onclick="cadastrarDia()" style="width:100%; margin-top: 15px; padding: 15px;">
+      ✅ CADASTRAR CARDÁPIO DO DIA
+    </button>
+  </div>
+
+  <!-- SEÇÃO 3: CARDÁPIO OFICIAL (aparece só quando tem) -->
+  <div id="areaOficial" class="area-oficial" style="display:none;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <div>
+        <h3 style="margin:0; color: #1e7e34;">📌 Cardápio Oficial</h3>
+        <small id="dataHoraOficial" style="color: #666;"></small>
+      </div>
+      <div>
+        <button class="btn-editar" onclick="editarCardapio()">✏️ Editar</button>
+        <button class="btn-cliente" onclick="abrirCardapioCliente()">👁️ Ver Cardápio</button>
+      </div>
+    </div>
+
+    <!-- Lista de pratos do cardápio oficial -->
+    <div id="listaOficial" style="margin: 20px 0;"></div>
+
+    <!-- Resumo de preços -->
+    <div style="background: white; padding: 15px; border-radius: 10px; margin: 15px 0;">
+      <div style="display: flex; justify-content: space-between;">
+        <span>💵 Total do cardápio:</span>
+        <span id="totalOficial" style="font-weight: bold; color: #1e7e34;">R$ 0,00</span>
+      </div>
+    </div>
+
+    <!-- Ações do dia -->
+    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+      <button class="btn-vermelho" onclick="finalizarDia()">🏁 Finalizar Dia</button>
+    </div>
+  </div>
+
+  <!-- SEÇÃO 4: CONFIGURAÇÃO DO WHATSAPP (aparece só quando tem cardápio) -->
+  <div id="whatsappConfig" class="whatsapp-config" style="display:none;">
+    <h3>📱 QR CODE DIRETO PARA WHATSAPP</h3>
+    
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+      <!-- Configuração do Número -->
+      <div style="flex: 1; min-width: 250px;">
+        <label style="font-weight: bold;">📞 Número do WhatsApp:</label>
+        <div style="display: flex; gap: 10px; margin: 10px 0;">
+          <input type="text" id="numeroWhatsApp" 
+                 placeholder="55DDDNUMERO (ex: 558599999999)"
+                 value="558599999999" 
+                 style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
+        </div>
+        
+        <label style="font-weight: bold;">💬 Mensagem Padrão:</label>
+        <textarea id="mensagemWhatsApp" rows="6" 
+                  style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px;">🍽️ *PEDIDO - {DATA}*
+
+Olá! Gostaria de fazer um pedido:
+
+{ITENS}
+
+📌 *Observações:* 
+📌 *Endereço de entrega:* 
+📌 *Forma de pagamento:* </textarea>
+        
+        <p style="font-size: 12px; color: #666;">
+          ⚡ Use {DATA} e {ITENS} que serão substituídos automaticamente
+        </p>
+      </div>
+      
+      <!-- QR Code -->
+      <div style="flex: 0 0 250px; text-align: center;">
+        <div style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <div id="qrCodeContainer" style="margin-bottom: 15px;">
+            <img id="qrCodeImg" src="" style="max-width: 200px; display: none;">
+            <div id="qrCodePlaceholder" style="width: 200px; height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; margin: 0 auto; border-radius: 10px;">
+              <span style="color: #999;">Configure o número</span>
+            </div>
+          </div>
+          
+          <button class="btn-verde" onclick="gerarQRCodeWhatsApp()" style="width: 100%; margin-bottom: 10px;">
+            🔄 GERAR QR CODE
+          </button>
+          
+          <button class="btn-verde" onclick="testarLinkWhatsApp()" style="width: 100%;">
+            📱 TESTAR LINK
+          </button>
+          
+          <p style="margin-top: 10px; font-size: 11px; color: #666;">
+            Cliente escaneia e já abre o WhatsApp com a mensagem
+          </p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Preview da mensagem -->
+    <div class="whatsapp-preview">
+      <h4>📝 Preview da Mensagem:</h4>
+      <pre id="previewMensagem">Aguardando cardápio...</pre>
+    </div>
+  </div>
+
+  <!-- SEÇÃO 5: HISTÓRICO -->
+  <hr style="margin: 30px 0;">
+  
+  <h3>📜 Histórico de Cardápios</h3>
+  <button class="btn-verde" onclick="abrirHistorico()" style="margin-bottom: 15px;">📜 Atualizar Histórico</button>
+  <div id="listaHistorico" class="lista"></div>
+
+</div>
+
+<script>
+// ============================================
+// VARIÁVEIS GLOBAIS
+// ============================================
+let todosPratos = []           // Todos os pratos cadastrados (com preços)
+let selecionados = []           // Pratos selecionados para hoje
+let cardapioOficial = null      // Cardápio oficial salvo
+
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("🚀 Inicializando Cardápio do Dia...")
+  
+  // Carregar pratos da calculadora precificadora
+  await carregarPratos()
+  
+  // Carregar cardápio salvo
+  await carregarCardapioSalvo()
+  
+  // Carregar histórico
+  await abrirHistorico()
+})
+
+// ============================================
+// CARREGAR PRATOS (AGORA COM PREÇOS)
+// ============================================
+async function carregarPratos() {
+  try {
+    // Usar getPratos() para pegar os preços
+    todosPratos = await window.api.getPratos() || []
+    
+    // Log para debug
+    console.log("📋 Pratos carregados:", todosPratos.length)
+    todosPratos.forEach(p => {
+      console.log(`  - ${p.nome}: R$ ${p.precoVenda?.toFixed(2) || '0.00'}`)
+    })
+    
+    renderizarListaPratos()
+    
+  } catch (error) {
+    console.error("Erro ao carregar pratos:", error)
+    mostrarNotificacao("Erro ao carregar pratos", "erro")
+  }
+}
+
+// ============================================
+// RENDERIZAR LISTA DE PRATOS (CORRIGIDO)
+// ============================================
+function renderizarListaPratos() {
+  const lista = document.getElementById("listaPratos")
+  
+  if (!todosPratos || todosPratos.length === 0) {
+    lista.innerHTML = `
+      <div style="text-align: center; padding: 30px; background: #f8f9fa; border-radius: 10px;">
+        <p style="color: #666;">Nenhum prato cadastrado.</p>
+        <p style="color: #666; font-size: 12px;">Vá em "Pratos" para cadastrar com preços.</p>
+      </div>
+    `
+    return
+  }
+  
+  let html = ''
+  todosPratos.forEach(prato => {
+    // GARANTIR QUE OS DADOS EXISTAM
+    const nome = prato.nome || 'Sem nome'
+    const descricao = prato.descricao || ''
+    const preco = typeof prato.precoVenda === 'number' ? prato.precoVenda : 0
+    
+    html += `
+      <div class="prato-card">
+        <div class="prato-info">
+          <div class="prato-nome">${nome}</div>
+          ${descricao ? `<div class="prato-desc">${descricao}</div>` : ''}
+        </div>
+        <span class="prato-preco">R$ ${preco.toFixed(2)}</span>
+        <button class="btn-verde" onclick='adicionarPrato(${JSON.stringify(prato).replace(/'/g, "\\'")})'>
+          ➕ Adicionar
+        </button>
+      </div>
+    `
+  })
+  
+  lista.innerHTML = html
+}
+
+// ============================================
+// CARREGAR CARDÁPIO SALVO
+// ============================================
+async function carregarCardapioSalvo() {
+  try {
+    const data = await window.api.getCardapioAtual()
+    console.log("Cardápio salvo:", data)
+    
+    if (data && data.itens && data.itens.length > 0) {
+      cardapioOficial = data
+      mostrarOficial(data)
+      document.getElementById('statusCardapio').innerHTML = '✅ ATIVO'
+      document.getElementById('statusCardapio').className = 'status-badge badge-ativo'
+    } else {
+      document.getElementById('statusCardapio').innerHTML = '⏸️ INATIVO'
+      document.getElementById('statusCardapio').className = 'status-badge badge-inativo'
+    }
+  } catch (error) {
+    console.error("Erro ao carregar cardápio:", error)
+  }
+}
+
+// ============================================
+// ADICIONAR PRATO À SELEÇÃO
+// ============================================
+function adicionarPrato(prato) {
+  selecionados.push(prato)
+  renderizarSelecionados()
+  mostrarNotificacao(`✅ ${prato.nome || prato} adicionado`)
+}
+
+// ============================================
+// RENDERIZAR PRATOS SELECIONADOS (CORRIGIDO)
+// ============================================
+function renderizarSelecionados() {
+  const area = document.getElementById("areaHoje")
+  const totalSpan = document.getElementById("totalSelecionados")
+  
+  totalSpan.innerHTML = selecionados.length
+  
+  if (selecionados.length === 0) {
+    area.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">Nenhum prato selecionado</p>'
+    return
+  }
+  
+  let html = ''
+  let totalPreco = 0
+  
+  selecionados.forEach((prato, index) => {
+    const nome = prato.nome || prato
+    const preco = typeof prato.precoVenda === 'number' ? prato.precoVenda : 0
+    totalPreco += preco
+    
+    html += `
+      <div class="prato-card" style="margin-bottom: 10px;">
+        <div class="prato-info">
+          <div class="prato-nome">${nome}</div>
+        </div>
+        <span class="prato-preco">R$ ${preco.toFixed(2)}</span>
+        <button class="btn-vermelho" onclick="removerPrato(${index})" style="padding: 5px 10px;">✕</button>
+      </div>
+    `
+  })
+  
+  html += `
+    <div style="display: flex; justify-content: space-between; padding: 15px; background: #e8f5e9; border-radius: 8px; margin-top: 15px;">
+      <strong>TOTAL:</strong>
+      <strong style="color: #1e7e34;">R$ ${totalPreco.toFixed(2)}</strong>
+    </div>
+  `
+  
+  area.innerHTML = html
+}
+
+// ============================================
+// REMOVER PRATO
+// ============================================
+function removerPrato(index) {
+  const removido = selecionados[index].nome || selecionados[index]
+  selecionados.splice(index, 1)
+  renderizarSelecionados()
+  mostrarNotificacao(`✖️ ${removido} removido`)
+}
+
+// ============================================
+// LIMPAR SELEÇÃO
+// ============================================
+function limparSelecao() {
+  if (selecionados.length === 0) return
+  if (confirm("Limpar todos os pratos selecionados?")) {
+    selecionados = []
+    renderizarSelecionados()
+  }
+}
+
+// ============================================
+// CADASTRAR CARDÁPIO OFICIAL
+// ============================================
+async function cadastrarDia() {
+  if (selecionados.length === 0) {
+    alert("Selecione pelo menos um prato para o cardápio do dia!")
+    return
+  }
+
+  const agora = new Date()
+
+  cardapioOficial = {
+    data: agora.toLocaleDateString('pt-BR'),
+    hora: agora.toLocaleTimeString('pt-BR'),
+    itens: selecionados.map(prato => ({
+      nome: prato.nome || prato,
+      descricao: prato.descricao || '',
+      precoVenda: prato.precoVenda || 0,
+      id: prato.id
+    }))
+  }
+
+  try {
+    await window.api.saveCardapioAtual(cardapioOficial)
+    console.log("Cardápio salvo:", cardapioOficial)
+    
+    mostrarOficial(cardapioOficial)
+    
+    document.getElementById('statusCardapio').innerHTML = '✅ ATIVO'
+    document.getElementById('statusCardapio').className = 'status-badge badge-ativo'
+    
+    selecionados = []
+    renderizarSelecionados()
+    
+    mostrarNotificacao("✅ Cardápio do dia cadastrado!")
+  } catch (error) {
+    console.error("Erro ao salvar cardápio:", error)
+    alert("Erro ao salvar cardápio. Tente novamente.")
+  }
+}
+
+// ============================================
+// MOSTRAR CARDÁPIO OFICIAL (CORRIGIDO)
+// ============================================
+function mostrarOficial(registro) {
+  const area = document.getElementById("areaOficial")
+  const lista = document.getElementById("listaOficial")
+  const dataHora = document.getElementById("dataHoraOficial")
+
+  dataHora.innerHTML = `Cadastrado em ${registro.data} às ${registro.hora}`
+
+  let html = ''
+  let total = 0
+  
+  registro.itens.forEach((item, index) => {
+    const nome = item.nome || item
+    const preco = typeof item.precoVenda === 'number' ? item.precoVenda : 0
+    total += preco
+    
+    html += `
+      <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #ddd;">
+        <span>${index + 1}. ${nome}</span>
+        <span style="font-weight: bold;">R$ ${preco.toFixed(2)}</span>
+      </div>
+    `
+  })
+
+  lista.innerHTML = html
+  document.getElementById("totalOficial").innerHTML = `R$ ${total.toFixed(2)}`
+  area.style.display = "block"
+  
+  // Mostrar seção do WhatsApp
+  document.getElementById("whatsappConfig").style.display = "block"
+  
+  // Atualizar preview da mensagem
+  atualizarPreviewMensagem()
+}
+
+// ============================================
+// FUNÇÕES DO WHATSAPP (CORRIGIDAS)
+// ============================================
+
+function atualizarPreviewMensagem() {
+  if (!cardapioOficial) return
+  
+  const modelo = document.getElementById('mensagemWhatsApp').value
+  
+  // Substituir {DATA}
+  let mensagem = modelo.replace('{DATA}', cardapioOficial.data)
+  
+  // Montar lista de itens com PREÇOS GARANTIDOS
+  let itensTexto = ''
+  let total = 0
+  
+  cardapioOficial.itens.forEach((item, index) => {
+    const nome = item.nome || item
+    const preco = typeof item.precoVenda === 'number' ? item.precoVenda : 0
+    total += preco
+    itensTexto += `${index + 1}. ${nome} - R$ ${preco.toFixed(2)}\n`
+  })
+  
+  itensTexto += `\n💰 *TOTAL: R$ ${total.toFixed(2)}*`
+  
+  // Substituir {ITENS}
+  mensagem = mensagem.replace('{ITENS}', itensTexto)
+  
+  document.getElementById('previewMensagem').innerHTML = mensagem
+}
+
+function gerarQRCodeWhatsApp() {
+  if (!cardapioOficial) {
+    alert("❌ Cadastre o cardápio do dia primeiro!")
+    return
+  }
+  
+  const numero = document.getElementById('numeroWhatsApp').value.trim()
+  if (!numero) {
+    alert("❌ Digite o número do WhatsApp!")
+    return
+  }
+  
+  // Limpar número (deixar só dígitos)
+  const numeroLimpo = numero.replace(/\D/g, '')
+  
+  if (numeroLimpo.length < 10) {
+    alert("❌ Número inválido! Use formato: 55DDDNUMERO (ex: 558599999999)")
+    return
+  }
+  
+  // Montar mensagem com PREÇOS GARANTIDOS
+  const modelo = document.getElementById('mensagemWhatsApp').value
+  let mensagem = modelo.replace('{DATA}', cardapioOficial.data)
+  
+  let itensTexto = ''
+  let total = 0
+  
+  cardapioOficial.itens.forEach((item, index) => {
+    const nome = item.nome || item
+    const preco = typeof item.precoVenda === 'number' ? item.precoVenda : 0
+    total += preco
+    itensTexto += `${index + 1}. ${nome} - R$ ${preco.toFixed(2)}\n`
+  })
+  
+  itensTexto += `\n💰 TOTAL: R$ ${total.toFixed(2)}`
+  
+  mensagem = mensagem.replace('{ITENS}', itensTexto)
+  
+  // Criar link do WhatsApp
+  const link = `https://wa.me/${numeroLimpo}?text=${encodeURIComponent(mensagem)}`
+  
+  // Gerar QR Code
+  const qrImg = document.getElementById('qrCodeImg')
+  const placeholder = document.getElementById('qrCodePlaceholder')
+  
+  qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`
+  qrImg.style.display = 'block'
+  placeholder.style.display = 'none'
+  
+  // Salvar link para teste
+  window.ultimoLinkWhatsApp = link
+  
+  mostrarNotificacao("✅ QR Code gerado!")
+}
+
+function testarLinkWhatsApp() {
+  if (!window.ultimoLinkWhatsApp) {
+    gerarQRCodeWhatsApp()
+  }
+  
+  if (window.ultimoLinkWhatsApp) {
+    window.open(window.ultimoLinkWhatsApp, '_blank')
+  }
+}
+
+// ============================================
+// EDITAR CARDÁPIO
+// ============================================
+function editarCardapio() {
+  if (!cardapioOficial) return
+  
+  selecionados = [...cardapioOficial.itens]
+  renderizarSelecionados()
+  
+  // Rolar para a seção de edição
+  document.getElementById("areaHoje").scrollIntoView({ behavior: "smooth" })
+  mostrarNotificacao("✏️ Editando cardápio...")
+}
+
+// ============================================
+// ABRIR CARDÁPIO DO CLIENTE
+// ============================================
+function abrirCardapioCliente() {
+  if (!cardapioOficial) {
+    alert("Cadastre o cardápio do dia primeiro!")
+    return
+  }
+  
+  // Salvar no sessionStorage para o pedidosDia.html
+  sessionStorage.setItem('cardapioOficial', JSON.stringify(cardapioOficial))
+  
+  // Abrir em nova janela
+  const url = window.location.href.replace('cardapioDia.html', 'pedidosDia.html')
+  
+  const clienteWindow = window.open(url, '_blank', 'width=500,height=800,menubar=no,location=no,toolbar=no,scrollbars=yes')
+  
+  if (!clienteWindow) {
+    alert(`Pop-up bloqueado! Clique no link:\n\n${url}`)
+  }
+}
+
+// ============================================
+// FINALIZAR DIA
+// ============================================
+async function finalizarDia() {
+  if (!cardapioOficial) return
+  
+  if (confirm("Tem certeza que deseja finalizar o dia? O cardápio será movido para o histórico.")) {
+    try {
+      // Salvar no histórico
+      await window.api.salvarHistoricoFinal(cardapioOficial)
+      
+      // Limpar cardápio atual
+      await window.api.saveCardapioAtual(null)
+
+      cardapioOficial = null
+      document.getElementById("areaOficial").style.display = "none"
+      document.getElementById("whatsappConfig").style.display = "none"
+      document.getElementById('statusCardapio').innerHTML = '⏸️ INATIVO'
+      document.getElementById('statusCardapio').className = 'status-badge badge-inativo'
+      
+      // Atualizar histórico
+      await abrirHistorico()
+      
+      mostrarNotificacao("✅ Dia finalizado! Cardápio no histórico.")
+    } catch (error) {
+      console.error("Erro ao finalizar dia:", error)
+      alert("Erro ao finalizar dia. Tente novamente.")
+    }
+  }
+}
+
+// ============================================
+// ABRIR HISTÓRICO (CORRIGIDO)
+// ============================================
+async function abrirHistorico() {
+  try {
+    const historico = await window.api.getHistoricoFinal() || []
+    const lista = document.getElementById("listaHistorico")
+    
+    if (!historico || historico.length === 0) {
+      lista.innerHTML = '<p style="color: #666; text-align: center;">Nenhum cardápio no histórico.</p>'
+      return
+    }
+
+    let html = ''
+    historico.reverse().slice(0, 10).forEach(h => {
+      const total = h.itens.reduce((acc, item) => {
+        return acc + (typeof item.precoVenda === 'number' ? item.precoVenda : 0)
+      }, 0)
+      
+      html += `
+        <div class="area-oficial" style="margin-bottom: 15px; cursor: pointer;" onclick='verHistoricoDetalhe(${JSON.stringify(h).replace(/'/g, "&apos;")})'>
+          <div style="display: flex; justify-content: space-between;">
+            <strong>📅 ${h.data} - ${h.hora}</strong>
+            <span style="color: #1e7e34;">${h.itens.length} itens</span>
+          </div>
+          <div style="margin-top: 5px; color: #666;">
+            Total: R$ ${total.toFixed(2)}
+          </div>
+        </div>
+      `
+    })
+    
+    lista.innerHTML = html
+  } catch (error) {
+    console.error("Erro ao carregar histórico:", error)
+  }
+}
+
+// ============================================
+// VER DETALHE DO HISTÓRICO (CORRIGIDO)
+// ============================================
+function verHistoricoDetalhe(historico) {
+  let detalhe = `📅 ${historico.data} - ${historico.hora}\n`
+  detalhe += `========================\n\n`
+  
+  historico.itens.forEach((item, i) => {
+    const nome = item.nome || item
+    const preco = typeof item.precoVenda === 'number' ? item.precoVenda : 0
+    detalhe += `${i+1}. ${nome} - R$ ${preco.toFixed(2)}\n`
+  })
+  
+  alert(detalhe)
+}
+
+// ============================================
+// NOTIFICAÇÕES
+// ============================================
+function mostrarNotificacao(mensagem, tipo = 'sucesso') {
+  const toast = document.createElement('div')
+  toast.className = 'toast-notification'
+  toast.textContent = mensagem
+  toast.style.background = tipo === 'sucesso' ? '#2ecc71' : '#e74c3c'
+  document.body.appendChild(toast)
+  
+  setTimeout(() => {
+    toast.remove()
+  }, 2000)
+}
+
+// Event listeners para atualizar preview
+document.getElementById('numeroWhatsApp').addEventListener('input', () => {
+  if (cardapioOficial) atualizarPreviewMensagem()
+})
+
+document.getElementById('mensagemWhatsApp').addEventListener('input', () => {
+  if (cardapioOficial) atualizarPreviewMensagem()
+})
+</script>
+
+</body>
+</html>

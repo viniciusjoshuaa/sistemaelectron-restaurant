@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Inserir Nota</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/theme.js"></script>
+<style>
+  .item-nota {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+  }
+  
+  .total-nota {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1e7e34;
+    text-align: right;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+
+<button class="btn-voltar" onclick="window.location.href='../index.html'">←</button>
+<h2 class="titulo-pagina">🧾 Inserir Nota de Compra</h2>
+
+<div class="container-central">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+    <!-- Formulário -->
+    <div>
+      <h3>Dados da Nota</h3>
+      <input type="text" id="fornecedor" placeholder="Fornecedor">
+      <input type="date" id="dataNota">
+      <input type="text" id="numeroNota" placeholder="Número da Nota">
+      
+      <h4>Itens da Nota</h4>
+      <div id="itens-container"></div>
+      
+      <button class="btn-verde" onclick="adicionarItem()">+ Adicionar Item</button>
+      <br><br>
+      <div class="total-nota" id="totalNota">Total: R$ 0,00</div>
+      <br>
+      <button class="btn-verde" onclick="salvarNota()">💾 Salvar Nota</button>
+    </div>
+    
+    <!-- Últimas Notas -->
+    <div>
+      <h3>Últimas Notas</h3>
+      <div id="listaNotas" class="lista"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let itens = []
+let insumos = []
+
+async function carregarInsumos() {
+  insumos = await window.api.getInsumos() || []
+}
+
+function adicionarItem() {
+  const container = document.getElementById('itens-container')
+  const index = itens.length
+  
+  itens.push({ insumoId: '', quantidade: 0, valorTotal: 0 })
+  
+  let options = '<option value="">Selecione...</option>'
+  insumos.forEach(ins => {
+    options += `<option value="${ins.id}">${ins.nome}</option>`
+  })
+  
+  const div = document.createElement('div')
+  div.className = 'item-nota'
+  div.id = `item-${index}`
+  div.innerHTML = `
+    <select style="width:100%; margin-bottom:10px;" onchange="atualizarItem(${index}, 'insumoId', this.value)">
+      ${options}
+    </select>
+    <div style="display: flex; gap: 10px;">
+      <input type="number" placeholder="Quantidade (kg)" step="0.01" style="flex:1;" onchange="atualizarItem(${index}, 'quantidade', this.value)">
+      <input type="number" placeholder="Valor Total R$" step="0.01" style="flex:1;" onchange="atualizarItem(${index}, 'valorTotal', this.value)">
+      <button class="btn-vermelho" onclick="removerItem(${index})">✕</button>
+    </div>
+  `
+  
+  container.appendChild(div)
+}
+
+function atualizarItem(index, campo, valor) {
+  itens[index][campo] = parseFloat(valor) || valor
+  calcularTotal()
+}
+
+function removerItem(index) {
+  itens.splice(index, 1)
+  renderItens()
+}
+
+function renderItens() {
+  const container = document.getElementById('itens-container')
+  container.innerHTML = ''
+  
+  itens.forEach((item, index) => {
+    let options = '<option value="">Selecione...</option>'
+    insumos.forEach(ins => {
+      const selected = ins.id === item.insumoId ? 'selected' : ''
+      options += `<option value="${ins.id}" ${selected}>${ins.nome}</option>`
+    })
+    
+    const div = document.createElement('div')
+    div.className = 'item-nota'
+    div.id = `item-${index}`
+    div.innerHTML = `
+      <select style="width:100%; margin-bottom:10px;" onchange="atualizarItem(${index}, 'insumoId', this.value)">
+        ${options}
+      </select>
+      <div style="display: flex; gap: 10px;">
+        <input type="number" placeholder="Quantidade (kg)" step="0.01" style="flex:1;" value="${item.quantidade}" onchange="atualizarItem(${index}, 'quantidade', this.value)">
+        <input type="number" placeholder="Valor Total R$" step="0.01" style="flex:1;" value="${item.valorTotal}" onchange="atualizarItem(${index}, 'valorTotal', this.value)">
+        <button class="btn-vermelho" onclick="removerItem(${index})">✕</button>
+      </div>
+    `
+    container.appendChild(div)
+  })
+}
+
+function calcularTotal() {
+  let total = 0
+  itens.forEach(item => {
+    total += item.valorTotal || 0
+  })
+  document.getElementById('totalNota').textContent = `Total: R$ ${total.toFixed(2)}`
+}
+
+async function salvarNota() {
+  const fornecedor = document.getElementById('fornecedor').value
+  const dataNota = document.getElementById('dataNota').value
+  const numeroNota = document.getElementById('numeroNota').value
+  
+  if (!fornecedor || !dataNota) {
+    alert('Preencha fornecedor e data!')
+    return
+  }
+  
+  if (itens.length === 0) {
+    alert('Adicione pelo menos um item!')
+    return
+  }
+  
+  // Validar se todos os itens estão completos
+  for (let item of itens) {
+    if (!item.insumoId || item.quantidade <= 0 || item.valorTotal <= 0) {
+      alert('Preencha todos os campos de cada item!')
+      return
+    }
+  }
+  
+  const nota = {
+    fornecedor,
+    data: dataNota,
+    numero: numeroNota,
+    itens: [...itens],
+    total: itens.reduce((acc, item) => acc + item.valorTotal, 0),
+    timestamp: Date.now()
+  }
+  
+  await window.api.saveNota(nota)
+  alert('✅ Nota salva com sucesso!')
+  
+  // Limpar formulário
+  document.getElementById('fornecedor').value = ''
+  document.getElementById('dataNota').value = ''
+  document.getElementById('numeroNota').value = ''
+  itens = []
+  renderItens()
+  calcularTotal()
+  carregarNotas()
+}
+
+async function carregarNotas() {
+  const notas = await window.api.getNotas() || []
+  const lista = document.getElementById('listaNotas')
+  lista.innerHTML = ''
+  
+  if (notas.length === 0) {
+    lista.innerHTML = '<p style="color: #666;">Nenhuma nota registrada.</p>'
+    return
+  }
+  
+  notas.reverse().slice(0, 5).forEach(nota => {
+    lista.innerHTML += `
+      <div class="item-nota">
+        <strong>${nota.fornecedor}</strong><br>
+        <small>${nota.data} - ${nota.itens?.length || 0} itens</small><br>
+        <strong style="color: #1e7e34;">R$ ${nota.total?.toFixed(2)}</strong>
+      </div>
+    `
+  })
+}
+
+// Inicialização
+async function init() {
+  await carregarInsumos()
+  carregarNotas()
+}
+
+init()
+</script>
+</body>
+</html>

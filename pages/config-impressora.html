@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Configurar Impressora</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/theme.js"></script>
+<style>
+  .config-container {
+    max-width: 600px;
+    margin: 50px auto;
+    background: white;
+    padding: 40px;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  }
+  
+  .opcao-impressora {
+    border: 2px solid #eee;
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  
+  .opcao-impressora:hover {
+    border-color: #1e7e34;
+    background: #f0f9f0;
+  }
+  
+  .opcao-impressora.selecionada {
+    border-color: #1e7e34;
+    background: #e8f5e9;
+  }
+  
+  .teste-impressao {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+  }
+</style>
+</head>
+<body>
+
+<button class="btn-voltar" onclick="window.location.href='../index.html'">←</button>
+<h2 class="titulo-pagina">🖨️ Configurar Impressora Térmica</h2>
+
+<div class="config-container">
+  <h3>Tipo de Conexão</h3>
+  
+  <div class="opcao-impressora" onclick="selecionarTipo('usb')" id="opcaoUsb">
+    <strong>🔌 USB</strong>
+    <p>Impressora conectada diretamente via USB</p>
+  </div>
+  
+  <div class="opcao-impressora" onclick="selecionarTipo('network')" id="opcaoNetwork">
+    <strong>🌐 Rede</strong>
+    <p>Impressora em rede (IP: 192.168.1.100)</p>
+  </div>
+  
+  <div class="opcao-impressora" onclick="selecionarTipo('bluetooth')" id="opcaoBluetooth">
+    <strong>📱 Bluetooth</strong>
+    <p>Impressora Bluetooth</p>
+  </div>
+  
+  <div class="teste-impressao">
+    <h4>🧪 Testar Impressão</h4>
+    <p>Clique no botão abaixo para testar a impressora</p>
+    <button class="btn-verde" onclick="testarImpressora()">🖨️ Imprimir Teste</button>
+    <div id="resultadoTeste" style="margin-top: 15px;"></div>
+  </div>
+  
+  <div style="text-align: center; margin-top: 30px;">
+    <button class="btn-verde" onclick="salvarConfig()">💾 Salvar Configuração</button>
+  </div>
+</div>
+
+<script>
+let tipoSelecionado = 'usb'
+
+function selecionarTipo(tipo) {
+  tipoSelecionado = tipo
+  
+  // Remover seleção de todos
+  document.querySelectorAll('.opcao-impressora').forEach(el => {
+    el.classList.remove('selecionada')
+  })
+  
+  // Adicionar seleção no escolhido
+  document.getElementById(`opcao${tipo.charAt(0).toUpperCase() + tipo.slice(1)}`).classList.add('selecionada')
+  
+  localStorage.setItem('tipoImpressora', tipo)
+}
+
+async function testarImpressora() {
+  const resultado = document.getElementById('resultadoTeste')
+  resultado.innerHTML = '<p style="color: #666;">⏳ Testando impressora...</p>'
+  
+  try {
+    const sucesso = await window.api.testarImpressora()
+    if (sucesso) {
+      resultado.innerHTML = '<p style="color: #2ecc71;">✅ Teste enviado para impressora!</p>'
+    } else {
+      resultado.innerHTML = '<p style="color: #e74c3c;">❌ Falha na impressão. Verifique a conexão.</p>'
+    }
+  } catch (error) {
+    resultado.innerHTML = `<p style="color: #e74c3c;">❌ Erro: ${error.message}</p>`
+  }
+}
+
+function salvarConfig() {
+  alert('✅ Configuração salva! Os pedidos serão impressos automaticamente.')
+  window.close()
+}
+
+// Carregar configuração salva
+const tipoSalvo = localStorage.getItem('tipoImpressora')
+if (tipoSalvo) {
+  selecionarTipo(tipoSalvo)
+} else {
+  selecionarTipo('usb')
+}
+</script>
+</body>
+</html>

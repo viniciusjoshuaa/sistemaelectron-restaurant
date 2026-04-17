@@ -1,0 +1,56 @@
+{
+  "name": "restaurante-prototipo-electron",
+  "version": "1.0.0",
+  "description": "Restaurant management prototype built with Electron for portfolio/demo purposes.",
+  "main": "main.js",
+  "author": "Vinicius Joshua Pessoa",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "server": "node server.js",
+    "build": "electron-builder --win",
+    "pack": "electron-builder --dir"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "qrcode": "^1.5.4",
+    "whatsapp-web.js": "^1.26.0"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.vinicius.restauranteprotótipo",
+    "productName": "Restaurante Prototipo",
+    "asar": false,
+    "files": [
+      "**/*",
+      "!README-PORTFOLIO-*.md",
+      "!MANUAL-*.md",
+      "!readme-manual-kit.zip",
+      "!restaurante-ajustes-entrega*.zip"
+    ],
+    "extraMetadata": {
+      "main": "main.js"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testes do Sistema</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/theme.js"></script>
+</head>
+<body class="page-shell">
+<button class="btn-voltar" onclick="window.location.href='../index.html'">←</button>
+<h2 class="titulo-pagina">🧪 Central de Testes</h2>
+
+<main class="page-content">
+  <div class="toolbar" style="justify-content:flex-end; margin-bottom:16px;">
+    <button class="theme-toggle btn-padrao" type="button" data-theme-toggle aria-pressed="false">☀️ Modo Claro</button>
+  </div>
+
+  <div class="page-grid-2">
+    <section class="panel">
+      <h3 class="section-title">Simulador do fluxo do WhatsApp</h3>
+      <label for="entradaBot">Mensagem de entrada</label>
+      <input id="entradaBot" placeholder="Ex.: oi, cardápio, horário">
+      <div class="toolbar" style="margin-top:12px;">
+        <button class="btn-verde btn-padrao" onclick="simularFluxo()">Simular</button>
+        <button class="btn-padrao" style="background:var(--surface-strong);color:var(--text);" onclick="preencherExemplo()">Usar exemplo</button>
+      </div>
+      <div id="resultadoFluxo" class="empty-state" style="margin-top:16px;">Nenhuma simulação executada.</div>
+      <pre id="detalheFluxo" style="margin-top:16px; padding:14px; border-radius:12px; min-height:160px;">{ }</pre>
+    </section>
+
+    <section class="panel">
+      <h3 class="section-title">Checklist rápido do sistema</h3>
+      <table class="table-clean">
+        <tbody id="checklistSistema"></tbody>
+      </table>
+      <div class="empty-state" style="margin-top:16px;">
+        Esta aba não substitui testes reais no WhatsApp. Ela serve para validar o JSON do fluxo, o tema e os dados principais antes de usar em produção.
+      </div>
+    </section>
+  </div>
+
+  <section class="panel" style="margin-top:24px;">
+    <h3 class="section-title">Prévia visual do tema</h3>
+    <div class="dashboard-grid" style="padding:0; margin:0; max-width:none;">
+      <article class="dashboard-card">
+        <div>
+          <div class="icon">🎨</div>
+          <h3>Cartão de teste</h3>
+          <p>Use esta área para revisar contraste, legibilidade e comportamento do modo claro/escuro.</p>
+        </div>
+        <span class="card-tag">Visual</span>
+      </article>
+      <article class="dashboard-card">
+        <div>
+          <div class="icon">📝</div>
+          <h3>Campos de formulário</h3>
+          <input placeholder="Placeholder do tema">
+          <textarea rows="4" placeholder="Texto longo para validar contraste"></textarea>
+        </div>
+        <span class="card-tag">Inputs</span>
+      </article>
+    </div>
+  </section>
+</main>
+
+<script>
+async function simularFluxo() {
+  const entrada = document.getElementById('entradaBot').value.trim()
+  if (!entrada) {
+    alert('Digite uma mensagem para testar o fluxo.')
+    return
+  }
+
+  try {
+    const resultado = await window.api.simularFluxoWhatsapp(entrada)
+    const resumo = document.getElementById('resultadoFluxo')
+    const detalhe = document.getElementById('detalheFluxo')
+
+    if (resultado.resposta) {
+      resumo.innerHTML = `<strong>Chave resolvida:</strong> ${resultado.chaveResolvida || 'nenhuma'}<br><strong>Resposta:</strong> ${resultado.resposta}`
+    } else {
+      resumo.textContent = 'Nenhum bloco correspondente foi encontrado no fluxo atual.'
+    }
+
+    detalhe.textContent = JSON.stringify(resultado, null, 2)
+  } catch (error) {
+    document.getElementById('resultadoFluxo').textContent = 'Falha ao simular o fluxo.'
+    document.getElementById('detalheFluxo').textContent = String(error)
+  }
+}
+
+function preencherExemplo() {
+  document.getElementById('entradaBot').value = 'oi'
+}
+
+async function carregarChecklist() {
+  const [clientes, pratos, insumos, fluxo] = await Promise.all([
+    window.api.getClientes(),
+    window.api.getPratos(),
+    window.api.getInsumos(),
+    window.whatsappAPI.getFluxo()
+  ])
+
+  const itens = [
+    ['Clientes cadastrados', `${clientes.length}`],
+    ['Pratos cadastrados', `${pratos.length}`],
+    ['Insumos cadastrados', `${insumos.length}`],
+    ['Fluxo possui etapa inicio', fluxo && fluxo.inicio ? 'Sim' : 'Não'],
+    ['Fluxo possui respostas adicionais', fluxo ? `${Math.max(Object.keys(fluxo).length - (fluxo.inicio ? 1 : 0), 0)}` : '0']
+  ]
+
+  const tbody = document.getElementById('checklistSistema')
+  tbody.innerHTML = itens.map(([label, valor]) => `
+    <tr>
+      <th>${label}</th>
+      <td>${valor}</td>
+    </tr>
+  `).join('')
+}
+
+carregarChecklist()
+</script>
+</body>
+</html>

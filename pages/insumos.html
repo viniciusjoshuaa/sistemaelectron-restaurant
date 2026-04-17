@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insumos</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/theme.js"></script>
+<style>
+  .insumo-card {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  
+  .insumo-info {
+    flex: 1;
+  }
+  
+  .insumo-nome {
+    font-weight: bold;
+    font-size: 16px;
+  }
+  
+  .insumo-detalhes {
+    color: #666;
+    font-size: 14px;
+    margin-top: 5px;
+  }
+  
+  .insumo-preco {
+    background: #1e7e34;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-weight: bold;
+  }
+  
+  .estoque-baixo {
+    color: #e74c3c;
+    font-weight: bold;
+  }
+  
+  input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+  
+  select {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    background: white;
+  }
+</style>
+</head>
+<body>
+
+<button class="btn-voltar" onclick="window.location.href='../index.html'">←</button>
+<h2 class="titulo-pagina"> Cadastro de Insumos</h2>
+
+<div class="container-central">
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+    <!-- Formulário -->
+    <div>
+      <h3>Novo Insumo</h3>
+      <input type="text" id="nome" placeholder="Nome do insumo (ex: Farinha de Trigo)">
+      
+      <select id="unidade">
+        <option value="kg">Quilo (kg)</option>
+        <option value="l">Litro (L)</option>
+        <option value="un">Unidade</option>
+      </select>
+      
+      <input type="number" id="preco" placeholder="Preço por kg/L (R$)" step="0.01">
+      <input type="number" id="estoque" placeholder="Estoque inicial (kg/L)" step="0.01">
+      
+      <div style="display: flex; gap: 10px;">
+        <button class="btn-verde" onclick="salvarInsumo()" style="flex: 1;">Salvar Insumo</button>
+        <button class="btn-editar" onclick="limparForm()" style="flex: 0.5;">Limpar</button>
+      </div>
+    </div>
+    
+    <!-- Lista -->
+    <div>
+      <h3>Insumos Cadastrados</h3>
+      <div id="listaInsumos" class="lista"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let editId = null
+let insumos = []
+
+// ============================================
+// CARREGAR INSUMOS
+// ============================================
+async function carregarInsumos() {
+  try {
+    insumos = await window.api.getInsumos() || []
+    const lista = document.getElementById('listaInsumos')
+    
+    if (insumos.length === 0) {
+      lista.innerHTML = '<p style="color: #666;">Nenhum insumo cadastrado.</p>'
+      return
+    }
+    
+    let html = ''
+    insumos.forEach(insumo => {
+      const estoqueBaixo = insumo.estoqueKg < 1 ? 'estoque-baixo' : ''
+      
+      html += `
+        <div class="insumo-card">
+          <div class="insumo-info">
+            <div class="insumo-nome">${insumo.nome}</div>
+            <div class="insumo-detalhes">
+              Unidade: ${insumo.unidade} | 
+              Estoque: <span class="${estoqueBaixo}">${(insumo.estoqueKg || 0).toFixed(2)} ${insumo.unidade}</span>
+            </div>
+          </div>
+          <div>
+            <span class="insumo-preco">R$ ${(insumo.precoKg || 0).toFixed(2)}</span>
+            <button class="btn-editar" onclick="editarInsumo(${insumo.id})" style="margin-left: 10px;">✏️</button>
+            <button class="btn-vermelho" onclick="excluirInsumo(${insumo.id})">🗑️</button>
+          </div>
+        </div>
+      `
+    })
+    
+    lista.innerHTML = html
+  } catch (error) {
+    console.error('Erro ao carregar insumos:', error)
+  }
+}
+
+// ============================================
+// SALVAR INSUMO
+// ============================================
+async function salvarInsumo() {
+  const nome = document.getElementById('nome').value.trim()
+  const unidade = document.getElementById('unidade').value
+  const preco = parseFloat(document.getElementById('preco').value)
+  const estoque = parseFloat(document.getElementById('estoque').value) || 0
+  
+  if (!nome) {
+    alert('Nome do insumo é obrigatório!')
+    document.getElementById('nome').focus()
+    return
+  }
+  
+  if (!preco || preco <= 0) {
+    alert('Preço inválido!')
+    document.getElementById('preco').focus()
+    return
+  }
+  
+  const insumo = {
+    nome,
+    unidade,
+    precoKg: preco,
+    estoqueKg: estoque
+  }
+  
+  try {
+    if (editId) {
+      await window.api.updateInsumo(editId, insumo)
+      alert('✅ Insumo atualizado!')
+      editId = null
+    } else {
+      await window.api.saveInsumo(insumo)
+      alert('✅ Insumo salvo com sucesso!')
+    }
+    
+    limparForm()
+    carregarInsumos()
+  } catch (error) {
+    console.error('Erro ao salvar insumo:', error)
+    alert('❌ Erro ao salvar insumo.')
+  }
+}
+
+// ============================================
+// EDITAR INSUMO
+// ============================================
+function editarInsumo(id) {
+  const insumo = insumos.find(i => i.id === id)
+  if (!insumo) return
+  
+  document.getElementById('nome').value = insumo.nome
+  document.getElementById('unidade').value = insumo.unidade
+  document.getElementById('preco').value = insumo.precoKg
+  document.getElementById('estoque').value = insumo.estoqueKg || ''
+  
+  editId = id
+}
+
+// ============================================
+// EXCLUIR INSUMO
+// ============================================
+async function excluirInsumo(id) {
+  if (confirm('Excluir este insumo?')) {
+    try {
+      await window.api.deleteInsumo(id)
+      if (editId === id) editId = null
+      carregarInsumos()
+    } catch (error) {
+      console.error('Erro ao excluir insumo:', error)
+    }
+  }
+}
+
+// ============================================
+// LIMPAR FORMULÁRIO
+// ============================================
+function limparForm() {
+  document.getElementById('nome').value = ''
+  document.getElementById('preco').value = ''
+  document.getElementById('estoque').value = ''
+  document.getElementById('unidade').value = 'kg'
+  editId = null
+}
+
+// ============================================
+// EXPOR FUNÇÕES
+// ============================================
+window.salvarInsumo = salvarInsumo
+window.editarInsumo = editarInsumo
+window.excluirInsumo = excluirInsumo
+window.limparForm = limparForm
+
+// Inicializar
+document.addEventListener('DOMContentLoaded', carregarInsumos)
+</script>
+</body>
+</html>

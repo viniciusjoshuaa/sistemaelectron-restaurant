@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhatsApp</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/theme.js"></script>
+</head>
+<body>
+<button class="btn-voltar" onclick="window.location.href='../index.html'">←</button>
+<h2 class="titulo-pagina">📲 Central do WhatsApp</h2>
+
+<div class="pagina-larga" style="display:grid;grid-template-columns:1.1fr 0.9fr;gap:20px;">
+  <div class="card">
+    <h3 style="margin-top:0;">Bot local via WhatsApp Web</h3>
+    <p style="color:#667085;">Use para operação local no computador do restaurante. O QR aparece aqui quando a biblioteca estiver instalada e a sessão for iniciada.</p>
+
+    <div class="toolbar" style="margin-top:14px;">
+      <button class="btn-verde btn-padrao" onclick="iniciarSessaoLocal()">Iniciar sessão local</button>
+      <button class="btn-verde btn-padrao" style="background:#5b6470;" onclick="carregarFluxo()">Carregar fluxo</button>
+      <button class="btn-verde btn-padrao" onclick="salvarFluxo()">Salvar fluxo</button>
+    </div>
+
+    <div class="card" style="margin-top:18px;background:#f8fbf8;">
+      <strong>Status:</strong> <span id="statusBot">Aguardando ação</span>
+      <div id="qrWrap" style="margin-top:14px;display:none;">
+        <img id="qrImage" alt="QR Code do WhatsApp" style="max-width:260px;border-radius:16px;border:1px solid #e5e7eb;">
+      </div>
+      <pre id="logBot" style="margin-top:14px;background:#111827;color:#f9fafb;padding:14px;border-radius:12px;min-height:120px;white-space:pre-wrap;">Nenhum evento ainda.</pre>
+    </div>
+
+    <div style="margin-top:18px;">
+      <label>Fluxo do bot (JSON)</label>
+      <textarea id="fluxoJson" rows="16" placeholder="{ }"></textarea>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Configuração oficial • Cloud API</h3>
+    <p style="color:#667085;">Modo recomendado para uso escalável e aderente às políticas da Meta. Salva os dados localmente para facilitar sua operação.</p>
+
+    <label>Phone Number ID</label>
+    <input id="phoneNumberId" placeholder="Ex: 123456789012345">
+
+    <label>Business Account ID</label>
+    <input id="businessAccountId" placeholder="Ex: 123456789012345">
+
+    <label>Access Token</label>
+    <input id="accessToken" placeholder="Token permanente da Cloud API">
+
+    <label>Verify Token</label>
+    <input id="verifyToken" placeholder="Token do webhook para validação">
+
+    <label>Webhook público</label>
+    <input id="webhookUrl" placeholder="Ex: https://seu-dominio.com/webhooks/whatsapp">
+
+    <div class="toolbar" style="margin-top:14px;">
+      <button class="btn-verde btn-padrao" onclick="salvarConfiguracao()">Salvar configuração</button>
+      <button class="btn-verde btn-padrao" style="background:#5b6470;" onclick="copiarExemploWebhook()">Copiar exemplo webhook</button>
+    </div>
+
+    <div class="card" style="margin-top:18px;background:#f8fbf8;">
+      <h4 style="margin-top:0;">Checklist de ativação</h4>
+      <ol style="padding-left:18px;line-height:1.6;color:#475467;">
+        <li>Criar app na Meta e habilitar WhatsApp Business Platform.</li>
+        <li>Definir número, token permanente e webhook público HTTPS.</li>
+        <li>Validar webhook com o verify token salvo aqui.</li>
+        <li>Enviar mensagens livres só dentro da janela de atendimento; fora dela, usar template aprovado.</li>
+      </ol>
+      <textarea id="exemploWebhook" rows="10" readonly style="margin-top:10px;"></textarea>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  await carregarFluxo()
+  await carregarConfiguracao()
+
+  if (window.whatsappAPI?.onEvent) {
+    window.whatsappAPI.onEvent((evento) => {
+      if (!evento) return
+      const { event, payload } = evento
+      registrarLog(`${new Date().toLocaleTimeString('pt-BR')} • ${event}`)
+      if (event === 'qr' && payload?.qrCode) {
+        document.getElementById('statusBot').textContent = 'QR gerado, escaneie com o WhatsApp Business'
+        document.getElementById('qrImage').src = payload.qrCode
+        document.getElementById('qrWrap').style.display = 'block'
+      } else if (event === 'ready') {
+        document.getElementById('statusBot').textContent = 'Conectado'
+        document.getElementById('qrWrap').style.display = 'none'
+      } else if (event === 'auth_failure') {
+        document.getElementById('statusBot').textContent = 'Falha de autenticação'
+      } else if (event === 'status') {
+        document.getElementById('statusBot').textContent = payload?.message || 'Atualizado'
+      } else if (event === 'error') {
+        document.getElementById('statusBot').textContent = payload?.message || 'Erro'
+      } else if (event === 'disconnected') {
+        document.getElementById('statusBot').textContent = 'Desconectado'
+      }
+    })
+  }
+
+  document.getElementById('exemploWebhook').value = exemploWebhookNode()
+})
+
+function registrarLog(linha) {
+  const log = document.getElementById('logBot')
+  log.textContent = `${linha}\n${log.textContent}`.trim()
+}
+
+async function carregarFluxo() {
+  try {
+    const fluxo = await window.whatsappAPI.getFluxo()
+    document.getElementById('fluxoJson').value = JSON.stringify(fluxo || {}, null, 2)
+  } catch (e) {
+    registrarLog('Não foi possível carregar o fluxo.')
+  }
+}
+
+async function salvarFluxo() {
+  try {
+    const fluxo = JSON.parse(document.getElementById('fluxoJson').value || '{}')
+    await window.whatsappAPI.saveFluxo(fluxo)
+    registrarLog('Fluxo salvo com sucesso.')
+    alert('✅ Fluxo salvo com sucesso.')
+  } catch (e) {
+    alert('JSON inválido no fluxo.')
+  }
+}
+
+function iniciarSessaoLocal() {
+  document.getElementById('statusBot').textContent = 'Inicializando sessão local...'
+  registrarLog('Solicitando início da sessão local.')
+  window.whatsappAPI.iniciarWhatsapp()
+}
+
+async function carregarConfiguracao() {
+  try {
+    const config = await window.api.getWhatsappConfig()
+    document.getElementById('phoneNumberId').value = config.phoneNumberId || ''
+    document.getElementById('businessAccountId').value = config.businessAccountId || ''
+    document.getElementById('accessToken').value = config.accessToken || ''
+    document.getElementById('verifyToken').value = config.verifyToken || ''
+    document.getElementById('webhookUrl').value = config.webhookUrl || ''
+  } catch (e) {
+    registrarLog('Configuração oficial indisponível no momento.')
+  }
+}
+
+async function salvarConfiguracao() {
+  const payload = {
+    phoneNumberId: document.getElementById('phoneNumberId').value.trim(),
+    businessAccountId: document.getElementById('businessAccountId').value.trim(),
+    accessToken: document.getElementById('accessToken').value.trim(),
+    verifyToken: document.getElementById('verifyToken').value.trim(),
+    webhookUrl: document.getElementById('webhookUrl').value.trim()
+  }
+
+  await window.api.saveWhatsappConfig(payload)
+  alert('✅ Configuração oficial salva.')
+}
+
+function exemploWebhookNode() {
+  return `const express = require('express')
+const app = express()
+app.use(express.json())
+
+app.get('/webhooks/whatsapp', (req, res) => {
+  const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN
+  if (req.query['hub.verify_token'] === VERIFY_TOKEN) {
+    return res.status(200).send(req.query['hub.challenge'])
+  }
+  return res.sendStatus(403)
+})
+
+app.post('/webhooks/whatsapp', (req, res) => {
+  console.log(JSON.stringify(req.body, null, 2))
+  res.sendStatus(200)
+})`
+}
+
+async function copiarExemploWebhook() {
+  const texto = document.getElementById('exemploWebhook').value
+  await navigator.clipboard.writeText(texto)
+  alert('Exemplo copiado.')
+}
+</script>
+</body>
+</html>

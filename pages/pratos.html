@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Pratos - Precificador</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/theme.js"></script>
+<style>
+  body { font-family: Arial; background: var(--bg); color: var(--text); margin: 0; }
+  .container { max-width: 1200px; margin: 80px auto 20px; padding: 0 20px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+  
+  .card { background: var(--surface); color: var(--text); padding: 25px; border-radius: 10px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+  .card h3 { margin-top: 0; color: #1e7e34; border-bottom: 2px solid #1e7e34; padding-bottom: 10px; }
+  
+  input, select, textarea { 
+    width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; 
+    border-radius: 5px; font-size: 14px; box-sizing: border-box;
+  }
+  input:focus, select:focus { outline: 2px solid #1e7e34; border-color: transparent; }
+  
+  .ing-row { 
+    display: flex; gap: 10px; align-items: center; background: var(--surface-soft); 
+    padding: 15px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #1e7e34;
+  }
+  .ing-row select { flex: 2; margin: 0; }
+  .ing-row .qtd-group { flex: 1; }
+  .ing-row .qtd-group input { margin: 0; }
+  .ing-row .unidade-select { flex: 0.8; }
+  .btn-remove { 
+    background: #dc3545; color: white; border: none; width: 36px; height: 36px; 
+    border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 18px;
+  }
+  .btn-remove:hover { background: #c82333; }
+  
+  .btn { 
+    padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; 
+    font-weight: bold; font-size: 14px; transition: 0.2s;
+  }
+  .btn-verde { background: #1e7e34; color: white; }
+  .btn-verde:hover { background: #145c26; }
+  .btn-cinza { background: #6c757d; color: white; }
+  .btn-cinza:hover { background: #5a6268; }
+  
+  .custo-box { 
+    background: color-mix(in srgb, var(--primary) 10%, var(--surface)); padding: 20px; border-radius: 8px; margin: 20px 0; 
+    border: 1px solid #1e7e34;
+  }
+  .custo-linha { display: flex; justify-content: space-between; margin: 5px 0; }
+  .custo-total { font-size: 20px; font-weight: bold; color: #1e7e34; margin-top: 10px; }
+  
+  .prato-item { 
+    background: var(--surface); color: var(--text); padding: 15px; margin-bottom: 10px; border-radius: 5px; 
+    border-left: 4px solid #1e7e34; cursor: pointer; transition: 0.2s;
+  }
+  .prato-item:hover { background: var(--surface-soft); transform: translateX(5px); }
+  .prato-header { display: flex; justify-content: space-between; align-items: center; }
+  .prato-nome { font-weight: bold; font-size: 16px; color: var(--text); }
+  .prato-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  .prato-lucro { color: #28a745; }
+  .prato-margem { color: #1e7e34; }
+  .empty-state { color: var(--text-muted); text-align: center; padding: 20px; }
+  .prato-precos { text-align: right; min-width: 140px; }
+  .badge-custo { background: #1e7e34; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; display: inline-block; margin: 2px 0; }
+  .badge-venda { background: #28a745; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; display: inline-block; margin: 2px 0; }
+  
+  .margem-group { 
+    display: flex; align-items: center; gap: 10px; background: var(--surface-soft); 
+    padding: 15px; border-radius: 5px; margin: 15px 0;
+  }
+  .margem-group input { width: 100px; margin: 0; text-align: center; font-size: 18px; }
+</style>
+</head>
+<body>
+
+<button class="btn-voltar" onclick="window.location.href='../index.html'">←</button>
+<h2 class="titulo-pagina">📝 CADASTRO DE PRATOS</h2>
+
+<div class="container">
+  <div class="grid">
+    
+    <!-- COLUNA 1: FORMULÁRIO -->
+    <div class="card">
+      <h3>➕ NOVO PRATO</h3>
+      
+      <input type="text" id="nome" placeholder="Nome do prato (ex: Filé à Parmegiana)">
+      <textarea id="descricao" placeholder="Descrição (opcional)" rows="2"></textarea>
+      
+      <h4 style="margin: 15px 0 5px;">🥕 INGREDIENTES</h4>
+      <div id="ingredientes-container"></div>
+      
+      <button class="btn btn-verde" onclick="adicionarIngrediente()" style="width:100%; margin:10px 0;">
+        + ADICIONAR INGREDIENTE
+      </button>
+      
+      <!-- CÁLCULO DE CUSTO -->
+      <div id="custoContainer" class="custo-box" style="display: none;">
+        <div id="detalhesCusto"></div>
+        <div class="custo-total" id="custoTotal">Custo Total: R$ 0,00</div>
+      </div>
+      
+      <!-- MARGEM DE LUCRO -->
+      <div class="margem-group">
+        <span style="font-weight: bold;">➕ MARGEM:</span>
+        <input type="number" id="margemLucro" value="30" min="0" max="500" step="5">
+        <span>%</span>
+      </div>
+      
+      <!-- PREÇO CALCULADO -->
+      <div style="background: #1e7e34; color: white; padding: 20px; border-radius: 8px; text-align: center; margin: 15px 0;">
+        <div style="font-size: 14px; opacity: 0.9;">💰 PREÇO DE VENDA</div>
+        <div style="font-size: 42px; font-weight: bold; margin: 5px 0;" id="precoVenda">R$ 0,00</div>
+        <div style="font-size: 14px;" id="lucroDisplay">Lucro: R$ 0,00 (0%)</div>
+      </div>
+      
+      <!-- BOTÕES -->
+      <div style="display: flex; gap: 10px;">
+        <button class="btn btn-verde" onclick="salvarPrato()" style="flex: 2;">💾 SALVAR</button>
+        <button class="btn btn-cinza" onclick="limparForm()" style="flex: 1;">🧹 LIMPAR</button>
+      </div>
+    </div>
+    
+    <!-- COLUNA 2: LISTA DE PRATOS -->
+    <div class="card">
+      <h3>📋 PRATOS CADASTRADOS</h3>
+      <div id="listaPratos"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================
+// VARIÁVEIS GLOBAIS
+// ============================================
+let ingredientes = []
+let insumos = []
+let editId = null
+
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+async function init() {
+  try {
+    console.log("🔄 Inicializando pratos...")
+    insumos = await window.api.getInsumos() || []
+    console.log(`📦 ${insumos.length} insumos carregados`)
+    
+    if (insumos.length === 0) {
+      alert('⚠️ Cadastre insumos primeiro!')
+    }
+    
+    // Iniciar com 1 ingrediente vazio
+    if (ingredientes.length === 0) {
+      ingredientes.push({ 
+        insumoId: '', 
+        quantidade: 0, 
+        unidade: 'g',
+        id: Date.now() + Math.random()
+      })
+    }
+    
+    renderizarIngredientes()
+    await carregarPratos()
+  } catch (error) {
+    console.error('❌ Erro na inicialização:', error)
+  }
+}
+
+// ============================================
+// RENDERIZAR INGREDIENTES
+// ============================================
+function renderizarIngredientes() {
+  const container = document.getElementById('ingredientes-container')
+  
+  if (insumos.length === 0) {
+    container.innerHTML = '<p style="color: #dc3545;">⚠️ Cadastre insumos primeiro!</p>'
+    return
+  }
+  
+  let html = ''
+  
+  ingredientes.forEach(ing => {
+    if (!ing.id) ing.id = Date.now() + Math.random()
+    
+    let options = '<option value="">Selecione...</option>'
+    insumos.forEach(ins => {
+      const selected = ing.insumoId == ins.id ? 'selected' : ''
+      options += `<option value="${ins.id}" ${selected}>${ins.nome} (R$ ${ins.precoKg?.toFixed(2)}/kg)</option>`
+    })
+    
+    html += `
+      <div class="ing-row">
+        <select onchange="atualizarIngrediente('${ing.id}', 'insumoId', this.value)">
+          ${options}
+        </select>
+        
+        <div class="qtd-group">
+          <input type="number" placeholder="Quantidade" step="0.01" min="0"
+                 value="${ing.quantidade || ''}"
+                 onchange="atualizarIngrediente('${ing.id}', 'quantidade', this.value)"
+                 oninput="atualizarIngrediente('${ing.id}', 'quantidade', this.value)">
+        </div>
+        
+        <select class="unidade-select" onchange="atualizarIngrediente('${ing.id}', 'unidade', this.value)">
+          <option value="g" ${ing.unidade === 'g' ? 'selected' : ''}>gramas</option>
+          <option value="kg" ${ing.unidade === 'kg' ? 'selected' : ''}>quilos</option>
+          <option value="ml" ${ing.unidade === 'ml' ? 'selected' : ''}>ml</option>
+          <option value="l" ${ing.unidade === 'l' ? 'selected' : ''}>litros</option>
+          <option value="un" ${ing.unidade === 'un' ? 'selected' : ''}>unidades</option>
+        </select>
+        
+        <button class="btn-remove" onclick="removerIngrediente('${ing.id}')">✕</button>
+      </div>
+    `
+  })
+  
+  container.innerHTML = html
+  calcularPreco()
+}
+
+// ============================================
+// ATUALIZAR INGREDIENTE
+// ============================================
+function atualizarIngrediente(id, campo, valor) {
+  const index = ingredientes.findIndex(ing => ing.id == id)
+  if (index === -1) return
+  
+  if (campo === 'quantidade') {
+    valor = valor === '' ? 0 : parseFloat(valor) || 0
+  }
+  
+  ingredientes[index][campo] = valor
+  calcularPreco()
+}
+
+// ============================================
+// ADICIONAR INGREDIENTE
+// ============================================
+function adicionarIngrediente() {
+  if (insumos.length === 0) {
+    alert('❌ Cadastre insumos primeiro!')
+    return
+  }
+  
+  ingredientes.push({ 
+    insumoId: '', 
+    quantidade: 0, 
+    unidade: 'g',
+    id: Date.now() + Math.random()
+  })
+  
+  renderizarIngredientes()
+}
+
+// ============================================
+// REMOVER INGREDIENTE
+// ============================================
+function removerIngrediente(id) {
+  ingredientes = ingredientes.filter(ing => ing.id != id)
+  
+  if (ingredientes.length === 0) {
+    ingredientes.push({ 
+      insumoId: '', 
+      quantidade: 0, 
+      unidade: 'g',
+      id: Date.now() + Math.random()
+    })
+  }
+  
+  renderizarIngredientes()
+}
+
+// ============================================
+// CALCULAR PREÇO
+// ============================================
+function calcularPreco() {
+  let custoTotal = 0
+  let detalhesHtml = ''
+  
+  ingredientes.forEach(ing => {
+    if (!ing.insumoId || ing.quantidade <= 0) return
+    
+    const insumo = insumos.find(i => i.id == ing.insumoId)
+    if (!insumo) return
+    
+    // Converter para kg
+    let qtdKg = ing.quantidade
+    if (ing.unidade === 'g') qtdKg = ing.quantidade / 1000
+    if (ing.unidade === 'ml') qtdKg = ing.quantidade / 1000
+    
+    const custoItem = qtdKg * (insumo.precoKg || 0)
+    custoTotal += custoItem
+    
+    detalhesHtml += `
+      <div class="custo-linha">
+        <span>${insumo.nome}: ${ing.quantidade}${ing.unidade}</span>
+        <span>R$ ${custoItem.toFixed(2)}</span>
+      </div>
+    `
+  })
+  
+  if (custoTotal > 0) {
+    document.getElementById('detalhesCusto').innerHTML = detalhesHtml
+    document.getElementById('custoTotal').innerHTML = `Custo Total: R$ ${custoTotal.toFixed(2)}`
+    document.getElementById('custoContainer').style.display = 'block'
+  } else {
+    document.getElementById('custoContainer').style.display = 'none'
+  }
+  
+  const margem = parseFloat(document.getElementById('margemLucro').value) || 30
+  const precoVenda = custoTotal * (1 + margem / 100)
+  const lucro = precoVenda - custoTotal
+  
+  document.getElementById('precoVenda').innerHTML = `R$ ${precoVenda.toFixed(2)}`
+  document.getElementById('lucroDisplay').innerHTML = `Lucro: R$ ${lucro.toFixed(2)} (${margem}%)`
+  
+  return { custoTotal, precoVenda, margem }
+}
+
+// ============================================
+// SALVAR PRATO (VERSÃO CORRIGIDA)
+// ============================================
+async function salvarPrato() {
+  const nome = document.getElementById('nome').value.trim()
+  const descricao = document.getElementById('descricao').value.trim()
+  const margem = parseFloat(document.getElementById('margemLucro').value) || 30
+  
+  if (!nome) {
+    alert('❌ Nome do prato é obrigatório!')
+    return
+  }
+  
+  // Filtrar ingredientes válidos
+  const ingredientesValidos = ingredientes.filter(ing => 
+    ing.insumoId && ing.quantidade > 0
+  )
+  
+  if (ingredientesValidos.length === 0) {
+    alert('❌ Adicione pelo menos um ingrediente!')
+    return
+  }
+  
+  // Calcular custo total e preço de venda
+  let custoTotal = 0
+  ingredientesValidos.forEach(ing => {
+    const insumo = insumos.find(i => i.id == ing.insumoId)
+    if (insumo) {
+      let qtdKg = ing.quantidade
+      if (ing.unidade === 'g') qtdKg = ing.quantidade / 1000
+      if (ing.unidade === 'ml') qtdKg = ing.quantidade / 1000
+      custoTotal += qtdKg * (insumo.precoKg || 0)
+    }
+  })
+  
+  const precoVenda = custoTotal * (1 + margem / 100)
+  
+  // Remover IDs temporários
+  const ingredientesParaSalvar = ingredientesValidos.map(({ id, ...rest }) => rest)
+  
+  const prato = {
+    nome,
+    descricao,
+    ingredientes: ingredientesParaSalvar,
+    custoTotal: parseFloat(custoTotal.toFixed(2)),
+    margemLucro: margem,
+    precoVenda: parseFloat(precoVenda.toFixed(2)),
+    dataCadastro: new Date().toLocaleDateString()
+  }
+  
+  try {
+    console.log("💾 Salvando prato:", prato)
+    
+    if (editId) {
+      await window.api.updatePrato(editId, prato)
+      alert('✅ Prato atualizado!')
+      editId = null
+    } else {
+      await window.api.savePrato(prato)
+      alert('✅ Prato salvo!')
+    }
+    
+    limparForm()
+    await carregarPratos()
+  } catch (error) {
+    console.error('❌ Erro ao salvar:', error)
+    alert('❌ Erro ao salvar. Verifique o console.')
+  }
+}
+
+// ============================================
+// CARREGAR PRATOS (VERSÃO CORRIGIDA)
+// ============================================
+async function carregarPratos() {
+  try {
+    const pratos = await window.api.getPratos() || []
+    console.log(`📋 ${pratos.length} pratos carregados:`, pratos)
+    
+    const lista = document.getElementById('listaPratos')
+    
+    if (pratos.length === 0) {
+      lista.innerHTML = '<p class="empty-state">Nenhum prato cadastrado.</p>'
+      return
+    }
+    
+    let html = ''
+    pratos.reverse().forEach(prato => {
+      const custoTotal = prato.custoTotal || 0
+      const precoVenda = prato.precoVenda || (custoTotal * 1.3)
+      const margemLucro = prato.margemLucro || 30
+      const lucro = precoVenda - custoTotal
+      
+      html += `
+        <div class="prato-item" onclick="editarPrato(${prato.id})">
+          <div class="prato-header">
+            <div>
+              <span class="prato-nome">${prato.nome}</span>
+              <div class="prato-meta">
+                ${prato.ingredientes?.length || 0} ingredientes
+              </div>
+            </div>
+            <div class="prato-precos">
+              <div><span class="badge-custo">Custo: R$ ${custoTotal.toFixed(2)}</span></div>
+              <div><span class="badge-venda">Venda: R$ ${precoVenda.toFixed(2)}</span></div>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px;">
+            <span class="prato-lucro">💰 Lucro: R$ ${lucro.toFixed(2)}</span>
+            <span class="prato-margem">📊 Margem: ${margemLucro}%</span>
+          </div>
+        </div>
+      `
+    })
+    
+    lista.innerHTML = html
+  } catch (error) {
+    console.error('❌ Erro ao carregar pratos:', error)
+    document.getElementById('listaPratos').innerHTML = '<p style="color: #dc3545;">Erro ao carregar pratos.</p>'
+  }
+}
+
+// ============================================
+// EDITAR PRATO
+// ============================================
+async function editarPrato(id) {
+  try {
+    const pratos = await window.api.getPratos()
+    const prato = pratos.find(p => p.id === id)
+    if (!prato) return
+    
+    console.log("✏️ Editando prato:", prato)
+    
+    document.getElementById('nome').value = prato.nome
+    document.getElementById('descricao').value = prato.descricao || ''
+    document.getElementById('margemLucro').value = prato.margemLucro || 30
+    
+    if (prato.ingredientes && prato.ingredientes.length > 0) {
+      ingredientes = prato.ingredientes.map(ing => ({
+        ...ing,
+        id: Date.now() + Math.random()
+      }))
+    } else {
+      ingredientes = [{ 
+        insumoId: '', 
+        quantidade: 0, 
+        unidade: 'g',
+        id: Date.now() + Math.random()
+      }]
+    }
+    
+    renderizarIngredientes()
+    editId = id
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    
+  } catch (error) {
+    console.error('❌ Erro ao editar:', error)
+    alert('❌ Erro ao carregar prato para edição')
+  }
+}
+
+// ============================================
+// LIMPAR FORMULÁRIO
+// ============================================
+function limparForm() {
+  document.getElementById('nome').value = ''
+  document.getElementById('descricao').value = ''
+  document.getElementById('margemLucro').value = '30'
+  ingredientes = [{ 
+    insumoId: '', 
+    quantidade: 0, 
+    unidade: 'g',
+    id: Date.now() + Math.random()
+  }]
+  renderizarIngredientes()
+  editId = null
+}
+
+// ============================================
+// ATALHOS
+// ============================================
+document.getElementById('margemLucro').addEventListener('input', calcularPreco)
+
+// Expor funções globalmente
+window.adicionarIngrediente = adicionarIngrediente
+window.atualizarIngrediente = atualizarIngrediente
+window.removerIngrediente = removerIngrediente
+window.salvarPrato = salvarPrato
+window.limparForm = limparForm
+window.editarPrato = editarPrato
+
+// Iniciar
+init()
+</script>
+</body>
+</html>

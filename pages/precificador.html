@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Precificador de Pratos</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/theme.js"></script>
+</head>
+<body>
+<button class="btn-voltar" onclick="window.location.href='../index.html'">←</button>
+<h2 class="titulo-pagina">🧮 Precificador de Pratos</h2>
+
+<div class="pagina-larga">
+  <div class="card calculadora-container">
+    <div class="toolbar" style="justify-content:space-between;align-items:flex-start;">
+      <div>
+        <h3 style="margin-bottom:6px;">Preço sugerido com custo do prato + rateio de contas</h3>
+        <p style="margin:0;color:#667085;">Botões e campos padronizados com o restante do sistema.</p>
+      </div>
+      <button class="btn-verde btn-padrao" onclick="calcularPreco()">Calcular agora</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px;">
+      <div>
+        <label>Prato</label>
+        <select id="pratoSelect"></select>
+      </div>
+      <div>
+        <label>Estimativa de pedidos/mês</label>
+        <input type="number" id="estimativaPedidos" value="300" min="1" oninput="calcularPreco()">
+      </div>
+    </div>
+
+    <div id="resumoPrato" class="card" style="margin-top:20px;background:#f8fbf8;">
+      <strong id="nomePratoSelecionado">Selecione um prato</strong>
+      <p id="detalhePratoSelecionado" style="margin:8px 0 0;color:#667085;">O preço será calculado usando o custo/preço já cadastrado no prato.</p>
+    </div>
+
+    <div id="resultado" class="card" style="margin-top:22px;display:none;">
+      <h3 style="margin-top:0;">Resultado</h3>
+      <div class="resultado-linha"><span>Custo base do prato:</span><strong id="custoPrato">R$ 0,00</strong></div>
+      <div class="resultado-linha"><span>Contas fixas + pessoal (mensal):</span><strong id="custoContas">R$ 0,00</strong></div>
+      <div class="resultado-linha"><span>Estimativa de pedidos/mês:</span><strong id="qtdPedidos">0</strong></div>
+      <div class="resultado-linha"><span>Rateio por pedido:</span><strong id="rateioPedido">R$ 0,00</strong></div>
+      <div class="resultado-linha" style="font-size:18px;border-top:1px solid #e5e7eb;padding-top:12px;margin-top:12px;">
+        <span>Valor final sugerido:</span><strong id="valorFinal">R$ 0,00</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let pratos = []
+let contas = []
+
+document.addEventListener('DOMContentLoaded', carregarDados)
+
+async function carregarDados() {
+  try {
+    const data = await window.api.getPrecificadorData()
+    pratos = Array.isArray(data.pratos) ? data.pratos : []
+    contas = Array.isArray(data.contas) ? data.contas : []
+
+    const select = document.getElementById('pratoSelect')
+    if (!pratos.length) {
+      select.innerHTML = '<option value="">Nenhum prato cadastrado</option>'
+      return
+    }
+
+    select.innerHTML = pratos.map((p, i) => {
+      const valorBase = Number(p.precoVenda ?? p.valorFinal ?? p.custoTotal ?? 0)
+      return `<option value="${i}">${p.nome} • base R$ ${valorBase.toFixed(2)}</option>`
+    }).join('')
+
+    select.addEventListener('change', calcularPreco)
+    calcularPreco()
+  } catch (err) {
+    console.error('Erro ao carregar dados:', err)
+    alert('Não foi possível carregar pratos ou contas.')
+  }
+}
+
+function calcularPreco() {
+  const select = document.getElementById('pratoSelect')
+  const index = Number(select.value || 0)
+  const prato = pratos[index]
+
+  if (!prato) return
+
+  const qtdPedidos = Math.max(1, parseInt(document.getElementById('estimativaPedidos').value) || 1)
+  const custoPrato = Number(prato.precoVenda ?? prato.valorFinal ?? prato.custoTotal ?? 0)
+  const totalContas = contas.reduce((sum, c) => sum + Number(c.valor || 0), 0)
+  const rateio = totalContas / qtdPedidos
+  const valorFinal = custoPrato + rateio
+
+  document.getElementById('nomePratoSelecionado').textContent = prato.nome
+  document.getElementById('detalhePratoSelecionado').textContent =
+    `Margem cadastrada: ${Number(prato.margemLucro || 0).toFixed(0)}% • custo técnico: R$ ${Number(prato.custoTotal || 0).toFixed(2)}`
+
+  document.getElementById('custoPrato').textContent = `R$ ${custoPrato.toFixed(2)}`
+  document.getElementById('custoContas').textContent = `R$ ${totalContas.toFixed(2)}`
+  document.getElementById('qtdPedidos').textContent = qtdPedidos
+  document.getElementById('rateioPedido').textContent = `R$ ${rateio.toFixed(2)}`
+  document.getElementById('valorFinal').textContent = `R$ ${valorFinal.toFixed(2)}`
+  document.getElementById('resultado').style.display = 'block'
+}
+</script>
+</body>
+</html>
