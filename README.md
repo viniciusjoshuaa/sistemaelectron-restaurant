@@ -13,7 +13,6 @@ A ideia central é reduzir ao máximo a dependência de textos complexos, permit
 Além disso, o projeto segue em constante evolução. Em versões futuras, está prevista a implementação de recursos de **audiodescrição e suporte assistivo**, visando atender pessoas com baixa visão ou deficiência visual, tornando a experiência ainda mais inclusiva.
 
 Este sistema não busca apenas resolver um problema operacional, mas também contribuir para uma tecnologia mais acessível, simples e democrática.
-💡 Se quiser deixar ainda mais forte (opcional)
 • Sistema de Operação para Restaurante
 
 Aplicação desktop construída com Electron para centralizar a rotina operacional de restaurante em um único painel. O sistema reúne cadastro técnico de pratos, controle de insumos, precificação, gestão de mesas, acompanhamento de pedidos e visão de cozinha, reduzindo troca de contexto entre telas separadas.
