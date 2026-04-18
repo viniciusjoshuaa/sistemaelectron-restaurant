@@ -1,4 +1,4 @@
-# Mandir • Sistema de Operação para Restaurante
+• Sistema de Operação para Restaurante
 
 Aplicação desktop construída com Electron para centralizar a rotina operacional de restaurante em um único painel. O sistema reúne cadastro técnico de pratos, controle de insumos, precificação, gestão de mesas, acompanhamento de pedidos e visão de cozinha, reduzindo troca de contexto entre telas separadas.
 
@@ -84,5 +84,3 @@ npm start
 ## Observações
 
 - O projeto usa persistência local para facilitar demonstração e testes.
-- A página de mesas foi remodelada para suportar cadastro dinâmico e fluxo centralizado de pedidos.
-- O tema escuro foi ajustado nas áreas principais, incluindo a listagem de pratos cadastrados.
